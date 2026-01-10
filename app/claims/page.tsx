@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,13 +14,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { claims, patients } from "@/lib/data";
-import { Claim, ClaimStatus, ExpenseStatus } from "@/lib/types";
+import { Claim, ClaimStatus, ExpenseStatus, Patient } from "@/lib/types";
 import {
   Plus,
   Search,
   FileText,
-  DollarSign,
   CheckCircle,
   XCircle,
   Clock,
@@ -31,9 +29,115 @@ import {
 import { format, parseISO } from "date-fns";
 
 export default function ClaimsPage() {
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [newClaim, setNewClaim] = useState({
+    patientId: "",
+    policyNumber: "",
+    insurer: "",
+    claimAmount: "",
+    diagnosis: "",
+    treatment: "",
+  });
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [claimsRes, patientsRes] = await Promise.all([
+          fetch("/api/claims"),
+          fetch("/api/patients"),
+        ]);
+        
+        const claimsData = await claimsRes.json();
+        const patientsData = await patientsRes.json();
+        
+        setClaims(Array.isArray(claimsData) ? claimsData : []);
+        setPatients(Array.isArray(patientsData) ? patientsData : []);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        setClaims([]);
+        setPatients([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  // Handle adding a new claim
+  const handleAddClaim = async () => {
+    try {
+      if (!newClaim.patientId || !newClaim.policyNumber || !newClaim.insurer || !newClaim.claimAmount) {
+        alert("Please fill in all required fields");
+        return;
+      }
+
+      const selectedPatient = patients.find(p => p.id === newClaim.patientId);
+      if (!selectedPatient) {
+        alert("Selected patient not found");
+        return;
+      }
+
+      const claimData = {
+        id: `CLM-${Date.now()}`,
+        patientName: selectedPatient.name,
+        policyNumber: newClaim.policyNumber,
+        insurer: newClaim.insurer,
+        claimAmount: parseFloat(newClaim.claimAmount),
+        approvedAmount: 0,
+        pendingAmount: parseFloat(newClaim.claimAmount),
+        rejectedAmount: 0,
+        status: "Pending" as ClaimStatus,
+        submissionDate: new Date().toISOString(),
+        diagnosis: newClaim.diagnosis || selectedPatient.diagnosis,
+        treatment: newClaim.treatment,
+        expenses: [],
+        approvalHistory: [
+          {
+            id: `HIST-${Date.now()}`,
+            description: "Claim submitted for review",
+            amount: parseFloat(newClaim.claimAmount),
+            status: "Approved" as const,
+            date: new Date().toISOString(),
+          },
+        ],
+      };
+
+      const response = await fetch("/api/claims", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(claimData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create claim");
+      }
+
+      const addedClaim = await response.json();
+      setClaims([...claims, addedClaim]);
+
+      setNewClaim({
+        patientId: "",
+        policyNumber: "",
+        insurer: "",
+        claimAmount: "",
+        diagnosis: "",
+        treatment: "",
+      });
+      setShowAddDialog(false);
+
+      alert("Claim created successfully!");
+    } catch (error) {
+      console.error("Error creating claim:", error);
+      alert("Failed to create claim. Please try again.");
+    }
+  };
+
+  if (loading) return <div className="p-8">Loading...</div>;
 
   const filteredClaims = claims.filter(
     (claim) =>
@@ -111,51 +215,57 @@ export default function ClaimsPage() {
           <CardTitle className="text-amber-900">Claims Overview ({filteredClaims.length})</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-amber-200 bg-amber-50">
-                  <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Patient</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Policy Number</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Insurer</th>
-                  <th className="text-right py-3 px-4 font-medium text-sm text-gray-700">Claim Amount</th>
-                  <th className="text-right py-3 px-4 font-medium text-sm text-gray-700">Approved</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Submission Date</th>
-                  <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredClaims.map((claim, idx) => (
-                  <tr key={claim.id} style={{ animationDelay: `${idx * 50}ms` }} className="animate-fadeIn border-b hover:bg-amber-50 transition-colors duration-200">
-                    <td className="py-3 px-4 font-medium text-gray-900">{claim.patientName}</td>
-                    <td className="py-3 px-4 font-mono text-sm text-gray-600">{claim.policyNumber}</td>
-                    <td className="py-3 px-4 text-gray-700">{claim.insurer}</td>
-                    <td className="py-3 px-4 text-right font-bold text-amber-600">
-                      ${claim.claimAmount.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-right font-bold text-green-600">
-                      ${claim.approvedAmount.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4">{getStatusBadge(claim.status)}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {format(parseISO(claim.submissionDate), "MMM dd, yyyy")}
-                    </td>
-                    <td className="py-3 px-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedClaim(claim)}
-                        className="hover:bg-amber-100 hover:text-amber-700 transition-colors duration-200"
-                      >
-                        View Details
-                      </Button>
-                    </td>
+          {filteredClaims.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No claims found. Click "Create Claim" to add one.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-amber-200 bg-amber-50">
+                    <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Patient</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Policy Number</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Insurer</th>
+                    <th className="text-right py-3 px-4 font-medium text-sm text-gray-700">Claim Amount</th>
+                    <th className="text-right py-3 px-4 font-medium text-sm text-gray-700">Approved</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Submission Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-sm text-gray-700">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredClaims.map((claim, idx) => (
+                    <tr key={claim.id} style={{ animationDelay: `${idx * 50}ms` }} className="animate-fadeIn border-b hover:bg-amber-50 transition-colors duration-200">
+                      <td className="py-3 px-4 font-medium text-gray-900">{claim.patientName}</td>
+                      <td className="py-3 px-4 font-mono text-sm text-gray-600">{claim.policyNumber}</td>
+                      <td className="py-3 px-4 text-gray-700">{claim.insurer}</td>
+                      <td className="py-3 px-4 text-right font-bold text-amber-600">
+                        ${claim.claimAmount.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-green-600">
+                        ${claim.approvedAmount.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4">{getStatusBadge(claim.status)}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600">
+                        {format(parseISO(claim.submissionDate), "MMM dd, yyyy")}
+                      </td>
+                      <td className="py-3 px-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedClaim(claim)}
+                          className="hover:bg-amber-100 hover:text-amber-700 transition-colors duration-200"
+                        >
+                          View Details
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -460,7 +570,10 @@ export default function ClaimsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Patient</label>
-                <Select>
+                <Select
+                  value={newClaim.patientId}
+                  onChange={(e) => setNewClaim({ ...newClaim, patientId: e.target.value })}
+                >
                   <option value="">Select Patient</option>
                   {patients
                     .filter((p) => p.status === "Admitted")
@@ -473,35 +586,51 @@ export default function ClaimsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Policy Number</label>
-                <Input placeholder="POL-XXXX-XXX" />
+                <Input
+                  placeholder="POL-XXXX-XXX"
+                  value={newClaim.policyNumber}
+                  onChange={(e) => setNewClaim({ ...newClaim, policyNumber: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Insurance Provider</label>
-                <Input placeholder="Insurance company name" />
+                <Input
+                  placeholder="Insurance company name"
+                  value={newClaim.insurer}
+                  onChange={(e) => setNewClaim({ ...newClaim, insurer: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Claim Amount</label>
-                <Input type="number" placeholder="0.00" />
+                <Input
+                  type="number"
+                  placeholder="0.00"
+                  value={newClaim.claimAmount}
+                  onChange={(e) => setNewClaim({ ...newClaim, claimAmount: e.target.value })}
+                />
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium mb-1 block">Diagnosis</label>
-                <Input placeholder="Enter diagnosis" />
+                <Input
+                  placeholder="Enter diagnosis (optional - will use patient's diagnosis)"
+                  value={newClaim.diagnosis}
+                  onChange={(e) => setNewClaim({ ...newClaim, diagnosis: e.target.value })}
+                />
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium mb-1 block">Treatment Details</label>
-                <Input placeholder="Describe treatment provided" />
+                <Input
+                  placeholder="Describe treatment provided"
+                  value={newClaim.treatment}
+                  onChange={(e) => setNewClaim({ ...newClaim, treatment: e.target.value })}
+                />
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={() => {
-                  // Handle create claim logic
-                  setShowAddDialog(false);
-                }}
-              >
+              <Button onClick={handleAddClaim}>
                 Create Claim
               </Button>
             </div>

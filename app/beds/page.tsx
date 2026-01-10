@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,16 +13,94 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { beds, patients } from "@/lib/data";
+
 import { Bed, Ward, BedStatus } from "@/lib/types";
 import { Plus, Filter } from "lucide-react";
 
 export default function BedManagementPage() {
+  const [beds, setBeds] = useState<Bed[]>([]);
+  const [patients, setPatients] = useState([]);
   const [selectedWard, setSelectedWard] = useState<Ward | "All">("All");
   const [selectedStatus, setSelectedStatus] = useState<BedStatus | "All">("All");
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newBed, setNewBed] = useState({ bedNumber: "", ward: "General" as Ward });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [bedsRes, patientsRes] = await Promise.all([
+          fetch("/api/beds"),
+          fetch("/api/patients"),
+        ]);
+        
+        const bedsData = await bedsRes.json();
+        const patientsData = await patientsRes.json();
+        
+        // Safety check: ensure we always set arrays
+        setBeds(Array.isArray(bedsData) ? bedsData : []);
+        setPatients(Array.isArray(patientsData) ? patientsData : []);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        // Set empty arrays on error
+        setBeds([]);
+        setPatients([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  // Handle adding a new bed
+  const handleAddBed = async () => {
+    try {
+      // Validate required fields
+      if (!newBed.bedNumber || !newBed.ward) {
+        alert("Please fill in all required fields");
+        return;
+      }
+
+      // Check if bed number already exists
+      if (beds.some(b => b.bedNumber === newBed.bedNumber)) {
+        alert("Bed number already exists!");
+        return;
+      }
+
+      const bedData = {
+        bedNumber: newBed.bedNumber,
+        ward: newBed.ward,
+        status: "available" as BedStatus,
+      };
+
+      const response = await fetch("/api/beds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bedData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add bed");
+      }
+
+      const addedBed = await response.json();
+
+      // Update local state
+      setBeds([...beds, addedBed]);
+
+      // Reset form and close dialog
+      setNewBed({ bedNumber: "", ward: "General" });
+      setShowAddDialog(false);
+
+      alert("Bed added successfully!");
+    } catch (error) {
+      console.error("Error adding bed:", error);
+      alert("Failed to add bed. Please try again.");
+    }
+  };
+
+  if (loading) return <div className="p-8">Loading...</div>;
 
   const filteredBeds = beds.filter((bed) => {
     const wardMatch = selectedWard === "All" || bed.ward === selectedWard;
@@ -96,7 +174,7 @@ export default function BedManagementPage() {
                   {occupied}/{total}
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                  {((occupied / total) * 100).toFixed(0)}% occupied
+                  {total > 0 ? ((occupied / total) * 100).toFixed(0) : 0}% occupied
                 </p>
               </CardContent>
             </Card>
@@ -147,36 +225,42 @@ export default function BedManagementPage() {
           <CardTitle className="text-cyan-900 dark:text-cyan-300">Bed Overview ({filteredBeds.length} beds)</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-            {filteredBeds.map((bed, idx) => (
-              <button
-                key={bed.id}
-                onClick={() => setSelectedBed(bed)}
-                style={{ animationDelay: `${idx * 30}ms` }}
-                className={`
-                  p-4 rounded-lg border-2 transition-all hover:scale-110 hover:shadow-lg cursor-pointer animate-fadeIn
-                  ${bed.status === "available" ? "border-green-400 bg-gradient-to-br from-green-100 to-green-200 hover:from-green-200 hover:to-green-300 shadow-md" : ""}
-                  ${bed.status === "occupied" ? "border-red-400 bg-gradient-to-br from-red-100 to-red-200 hover:from-red-200 hover:to-red-300 shadow-md" : ""}
-                  ${bed.status === "maintenance" ? "border-yellow-400 bg-gradient-to-br from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 shadow-md" : ""}
-                `}
-              >
-                <div className="flex flex-col items-center text-center">
-                  <div
-                    className={`w-3 h-3 rounded-full mb-2 ${getBedStatusColor(
-                      bed.status
-                    )}`}
-                  />
-                  <div className="font-bold text-sm">{bed.bedNumber}</div>
-                  <div className="text-xs text-gray-600 mt-1">{bed.ward}</div>
-                  {bed.status === "occupied" && bed.patientId && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      {patients.find((p) => p.id === bed.patientId)?.name.split(" ")[0]}
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
+          {filteredBeds.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No beds found. Click "Add New Bed" to create one.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+              {filteredBeds.map((bed, idx) => (
+                <button
+                  key={bed.id}
+                  onClick={() => setSelectedBed(bed)}
+                  style={{ animationDelay: `${idx * 30}ms` }}
+                  className={`
+                    p-4 rounded-lg border-2 transition-all hover:scale-110 hover:shadow-lg cursor-pointer animate-fadeIn
+                    ${bed.status === "available" ? "border-green-400 bg-gradient-to-br from-green-100 to-green-200 hover:from-green-200 hover:to-green-300 shadow-md" : ""}
+                    ${bed.status === "occupied" ? "border-red-400 bg-gradient-to-br from-red-100 to-red-200 hover:from-red-200 hover:to-red-300 shadow-md" : ""}
+                    ${bed.status === "maintenance" ? "border-yellow-400 bg-gradient-to-br from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 shadow-md" : ""}
+                  `}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div
+                      className={`w-3 h-3 rounded-full mb-2 ${getBedStatusColor(
+                        bed.status
+                      )}`}
+                    />
+                    <div className="font-bold text-sm">{bed.bedNumber}</div>
+                    <div className="text-xs text-gray-600 mt-1">{bed.ward}</div>
+                    {bed.status === "occupied" && bed.patientId && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        {patients.find((p) => p.id === bed.patientId)?.name.split(" ")[0]}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -298,13 +382,7 @@ export default function BedManagementPage() {
               <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={() => {
-                  // Handle add bed logic
-                  setShowAddDialog(false);
-                  setNewBed({ bedNumber: "", ward: "General" });
-                }}
-              >
+              <Button onClick={handleAddBed}>
                 Add Bed
               </Button>
             </div>

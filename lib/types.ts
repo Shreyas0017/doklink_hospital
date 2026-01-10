@@ -1,49 +1,96 @@
+import { ObjectId } from "mongodb";
+
+/* =========================
+   BASE / COMMON
+========================= */
+
+export interface BaseDocument {
+  _id?: ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/* =========================
+   ENUM / UNION TYPES
+========================= */
+
+export type Gender = "Male" | "Female" | "Other";
+
 export type BedStatus = "available" | "occupied" | "maintenance";
-export type Ward = "General" | "ICU" | "Pediatric" | "Maternity" | "Emergency";
+
+export type Ward =
+  | "General"
+  | "ICU"
+  | "Pediatric"
+  | "Maternity"
+  | "Emergency";
+
 export type PatientStatus = "Admitted" | "Discharged";
+
 export type ClaimStatus = "Pending" | "Approved" | "Rejected" | "Partial";
-export type DocumentType = "Report" | "Prescription" | "Lab Result" | "Discharge Summary";
+
 export type ExpenseStatus = "Pending" | "Approved" | "Rejected";
 
-export interface Bed {
-  id: string;
+export type DocumentType =
+  | "Report"
+  | "Prescription"
+  | "Lab Result"
+  | "Discharge Summary";
+
+export type ActivityType = "admission" | "discharge" | "claim";
+
+/* =========================
+   BED
+========================= */
+
+export interface Bed extends BaseDocument {
   bedNumber: string;
   ward: Ward;
   status: BedStatus;
-  patientId?: string;
+  patientId?: ObjectId;
 }
 
-export interface Patient {
-  id: string;
+/* =========================
+   PATIENT
+========================= */
+
+export interface Patient extends BaseDocument {
   name: string;
   age: number;
-  gender: "Male" | "Female" | "Other";
-  admissionDate: string;
-  dischargeDate?: string;
+  gender: Gender;
+  admissionDate: Date;
+  dischargeDate?: Date;
   diagnosis: string;
-  assignedBed?: string;
+  assignedBed?: ObjectId;
   status: PatientStatus;
   phone: string;
-  email: string;
-  address: string;
+  email?: string;
+  address?: string;
   emergencyContact: string;
-  bloodGroup: string;
-  allergies: string;
-  medications: string;
+  bloodGroup?: string;
+  allergies?: string;
+  medications?: string;
 }
 
-export interface Document {
-  id: string;
-  patientId: string;
+/* =========================
+   MEDICAL DOCUMENT
+========================= */
+
+export interface MedicalDocument extends BaseDocument {
+  patientId: ObjectId;
   type: DocumentType;
   name: string;
-  date: string;
+  date: Date;
   url: string;
 }
 
+/* =========================
+   DAILY EXPENSE
+========================= */
+
 export interface DailyExpense {
-  id: string;
-  date: string;
+  _id?: ObjectId;
+  date: Date;
   description: string;
   amount: number;
   status: ExpenseStatus;
@@ -51,9 +98,24 @@ export interface DailyExpense {
   notes?: string;
 }
 
-export interface Claim {
-  id: string;
-  patientId: string;
+/* =========================
+   APPROVAL HISTORY
+========================= */
+
+export interface ApprovalHistory {
+  _id?: ObjectId;
+  date: Date;
+  description: string;
+  amount: number;
+  status: ExpenseStatus;
+}
+
+/* =========================
+   CLAIM / INSURANCE
+========================= */
+
+export interface Claim extends BaseDocument {
+  patientId: ObjectId;
   patientName: string;
   policyNumber: string;
   insurer: string;
@@ -62,24 +124,47 @@ export interface Claim {
   pendingAmount: number;
   rejectedAmount: number;
   status: ClaimStatus;
-  submissionDate: string;
+  submissionDate: Date;
   diagnosis: string;
   treatment: string;
   expenses: DailyExpense[];
   approvalHistory: ApprovalHistory[];
 }
 
-export interface ApprovalHistory {
-  id: string;
-  date: string;
+/* =========================
+   ACTIVITY LOG
+========================= */
+
+export interface Activity extends BaseDocument {
+  type: ActivityType;
   description: string;
-  amount: number;
-  status: ExpenseStatus;
+  referenceId?: ObjectId;
+  time: Date;
 }
 
-export interface Activity {
-  id: string;
-  type: "admission" | "discharge" | "claim";
-  description: string;
-  time: string;
+/* =========================
+   USER / AUTH (NextAuth)
+========================= */
+
+export type UserRole = "Admin" | "Doctor" | "Nurse" | "Staff";
+
+export interface User extends BaseDocument {
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: UserRole;
+  isActive: boolean;
 }
+
+/* =========================
+   FRONTEND SAFE TYPES
+   (Used after mapping _id → id)
+========================= */
+
+export interface UIEntity {
+  id: string;
+}
+
+export type UIPatient = Patient & UIEntity;
+export type UIBed = Bed & UIEntity;
+export type UIClaim = Claim & UIEntity;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { patients, documents } from "@/lib/data";
 import { Patient, PatientStatus, DocumentType } from "@/lib/types";
 import {
   Plus,
@@ -36,12 +35,144 @@ import {
 import { format, parseISO } from "date-fns";
 
 export default function PatientsPage() {
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [documents, setDocuments] = useState([]);
+  const [beds, setBeds] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<PatientStatus | "All">("All");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDischargeDialog, setShowDischargeDialog] = useState(false);
   const [documentFilter, setDocumentFilter] = useState<DocumentType | "All">("All");
+  const [loading, setLoading] = useState(true);
+  const [newPatient, setNewPatient] = useState({
+    id: "",
+    name: "",
+    age: "",
+    gender: "Male",
+    phone: "",
+    email: "",
+    address: "",
+    bloodGroup: "A+",
+    emergencyContact: "",
+    diagnosis: "",
+    allergies: "",
+    medications: "",
+    assignedBed: "",
+  });
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [patientsRes, docsRes, bedsRes] = await Promise.all([
+          fetch("/api/patients"),
+          fetch("/api/documents"),
+          fetch("/api/beds"),
+        ]);
+        
+        const patientsData = await patientsRes.json();
+        const docsData = await docsRes.json();
+        const bedsData = await bedsRes.json();
+        
+        setPatients(Array.isArray(patientsData) ? patientsData : []);
+        setDocuments(Array.isArray(docsData) ? docsData : []);
+        setBeds(Array.isArray(bedsData) ? bedsData : []);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        setPatients([]);
+        setDocuments([]);
+        setBeds([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  // Handle adding a new patient
+  const handleAddPatient = async () => {
+    try {
+      if (!newPatient.name || !newPatient.age || !newPatient.phone) {
+        alert("Please fill in all required fields (Name, Age, Phone)");
+        return;
+      }
+
+      const patientId = newPatient.id || `P-${Date.now()}`;
+
+      const patientData = {
+        id: patientId,
+        name: newPatient.name,
+        age: parseInt(newPatient.age),
+        gender: newPatient.gender,
+        phone: newPatient.phone,
+        email: newPatient.email,
+        address: newPatient.address,
+        bloodGroup: newPatient.bloodGroup,
+        emergencyContact: newPatient.emergencyContact,
+        diagnosis: newPatient.diagnosis,
+        allergies: newPatient.allergies || "None",
+        medications: newPatient.medications || "None",
+        admissionDate: new Date().toISOString(),
+        status: "Admitted" as PatientStatus,
+        assignedBed: newPatient.assignedBed || undefined,
+      };
+
+      const response = await fetch("/api/patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patientData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to add patient");
+      }
+
+      const addedPatient = await response.json();
+
+      // If a bed was assigned, update the bed status
+      if (newPatient.assignedBed) {
+        const selectedBed = beds.find(b => b.bedNumber === newPatient.assignedBed);
+        if (selectedBed) {
+          await fetch(`/api/beds`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...selectedBed,
+              status: "occupied",
+              patientId: patientId,
+            }),
+          });
+        }
+      }
+
+      setPatients([...patients, addedPatient]);
+
+      setNewPatient({
+        id: "",
+        name: "",
+        age: "",
+        gender: "Male",
+        phone: "",
+        email: "",
+        address: "",
+        bloodGroup: "A+",
+        emergencyContact: "",
+        diagnosis: "",
+        allergies: "",
+        medications: "",
+        assignedBed: "",
+      });
+      setShowAddDialog(false);
+
+      alert("Patient added successfully!");
+    } catch (error) {
+      console.error("Error adding patient:", error);
+      alert(`Failed to add patient: ${error.message}`);
+    }
+  };
+
+  if (loading) return <div className="p-8">Loading...</div>;
 
   const filteredPatients = patients.filter((patient) => {
     const matchesSearch =
@@ -58,6 +189,8 @@ export default function PatientsPage() {
         return matchesPatient && matchesType;
       })
     : [];
+
+  const availableBeds = beds.filter(b => b.status === "available");
 
   const getStatusBadge = (status: PatientStatus) => {
     return status === "Admitted" ? (
@@ -431,40 +564,72 @@ export default function PatientsPage() {
           <div className="space-y-6 p-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">Full Name</label>
-                <Input placeholder="John Doe" />
+                <label className="text-sm font-medium mb-1 block">Full Name *</label>
+                <Input
+                  placeholder="John Doe"
+                  value={newPatient.name}
+                  onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Patient ID</label>
-                <Input placeholder="P-XXX" />
+                <Input
+                  placeholder="Auto-generated"
+                  value={newPatient.id}
+                  onChange={(e) => setNewPatient({ ...newPatient, id: e.target.value })}
+                />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Age</label>
-                <Input type="number" placeholder="25" />
+                <label className="text-sm font-medium mb-1 block">Age *</label>
+                <Input
+                  type="number"
+                  placeholder="25"
+                  value={newPatient.age}
+                  onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Gender</label>
-                <Select>
+                <Select
+                  value={newPatient.gender}
+                  onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
+                >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Phone</label>
-                <Input placeholder="+1-555-0000" />
+                <label className="text-sm font-medium mb-1 block">Phone *</label>
+                <Input
+                  placeholder="+1-555-0000"
+                  value={newPatient.phone}
+                  onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Email</label>
-                <Input type="email" placeholder="patient@email.com" />
+                <Input
+                  type="email"
+                  placeholder="patient@email.com"
+                  value={newPatient.email}
+                  onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
+                />
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium mb-1 block">Address</label>
-                <Input placeholder="123 Main St, City, State" />
+                <Input
+                  placeholder="123 Main St, City, State"
+                  value={newPatient.address}
+                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Blood Group</label>
-                <Select>
+                <Select
+                  value={newPatient.bloodGroup}
+                  onChange={(e) => setNewPatient({ ...newPatient, bloodGroup: e.target.value })}
+                >
                   <option>A+</option>
                   <option>A-</option>
                   <option>B+</option>
@@ -477,28 +642,48 @@ export default function PatientsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Emergency Contact</label>
-                <Input placeholder="+1-555-0000" />
+                <Input
+                  placeholder="+1-555-0000"
+                  value={newPatient.emergencyContact}
+                  onChange={(e) => setNewPatient({ ...newPatient, emergencyContact: e.target.value })}
+                />
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium mb-1 block">Diagnosis</label>
-                <Input placeholder="Enter diagnosis" />
+                <Input
+                  placeholder="Enter diagnosis"
+                  value={newPatient.diagnosis}
+                  onChange={(e) => setNewPatient({ ...newPatient, diagnosis: e.target.value })}
+                />
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium mb-1 block">Allergies</label>
-                <Input placeholder="None or list allergies" />
+                <Input
+                  placeholder="None or list allergies"
+                  value={newPatient.allergies}
+                  onChange={(e) => setNewPatient({ ...newPatient, allergies: e.target.value })}
+                />
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium mb-1 block">Current Medications</label>
-                <Input placeholder="List current medications" />
+                <Input
+                  placeholder="List current medications"
+                  value={newPatient.medications}
+                  onChange={(e) => setNewPatient({ ...newPatient, medications: e.target.value })}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Assign Bed</label>
-                <Select>
-                  <option value="">Select a bed</option>
-                  {/* Available beds would be listed here */}
-                  <option>G-102 (General)</option>
-                  <option>G-104 (General)</option>
-                  <option>ICU-202 (ICU)</option>
+                <Select
+                  value={newPatient.assignedBed}
+                  onChange={(e) => setNewPatient({ ...newPatient, assignedBed: e.target.value })}
+                >
+                  <option value="">Select a bed (optional)</option>
+                  {availableBeds.map((bed) => (
+                    <option key={bed.id} value={bed.bedNumber}>
+                      {bed.bedNumber} ({bed.ward})
+                    </option>
+                  ))}
                 </Select>
               </div>
             </div>
@@ -506,12 +691,7 @@ export default function PatientsPage() {
               <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                 Cancel
               </Button>
-              <Button
-                onClick={() => {
-                  // Handle add patient logic
-                  setShowAddDialog(false);
-                }}
-              >
+              <Button onClick={handleAddPatient}>
                 Add Patient
               </Button>
             </div>
