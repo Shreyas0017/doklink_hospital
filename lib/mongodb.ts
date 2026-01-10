@@ -8,7 +8,7 @@ if (!uri) throw new Error("MONGODB_URI missing");
 const dbName = process.env.MONGODB_DB_NAME;
 
 declare global {
-  var _mongo: Promise<MongoClient> | undefined;
+  let _mongo: Promise<MongoClient> | undefined;
 }
 
 const client = new MongoClient(uri);

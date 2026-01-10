@@ -7,9 +7,7 @@ import {
   Bed as BedIcon,
   Users,
   UserCheck,
-  UserMinus,
   FileText,
-  TrendingUp,
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,22 +69,22 @@ export default function Dashboard() {
             fetch("/api/activities"),
           ]);
 
-        const bedsData = (await bedsRes.json()).map((b: any) => ({
+        const bedsData = (await bedsRes.json()).map((b: Bed) => ({
           ...b,
           id: b._id,
         }));
 
-        const patientsData = (await patientsRes.json()).map((p: any) => ({
+        const patientsData = (await patientsRes.json()).map((p: Patient) => ({
           ...p,
           id: p._id,
         }));
 
-        const claimsData = (await claimsRes.json()).map((c: any) => ({
+        const claimsData = (await claimsRes.json()).map((c: Claim) => ({
           ...c,
           id: c._id,
         }));
 
-        const activitiesData = (await activitiesRes.json()).map((a: any) => ({
+        const activitiesData = (await activitiesRes.json()).map((a: Activity) => ({
           ...a,
           id: a._id,
         }));
@@ -135,10 +133,6 @@ export default function Dashboard() {
     admissions: Math.floor(Math.random() * 10) + 5,
     discharges: Math.floor(Math.random() * 8) + 3,
   }));
-
-  const maxValue = Math.max(
-    ...weeklyData.flatMap(d => [d.admissions, d.discharges])
-  );
 
   /* ================= UI ================= */
 
