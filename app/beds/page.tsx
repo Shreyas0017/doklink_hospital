@@ -67,11 +67,11 @@ export default function BedManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-blue-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 p-8">
       <div className="flex items-center justify-between mb-8 animate-fadeIn">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">Bed Management</h1>
-          <p className="text-gray-500 mt-2 text-lg">Manage hospital beds and assignments</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400 bg-clip-text text-transparent">Bed Management</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Manage hospital beds and assignments</p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300">
           <Plus className="h-4 w-4 mr-2" />
@@ -87,15 +87,15 @@ export default function BedManagementPage() {
           const colors = ["from-blue-50 to-blue-100", "from-red-50 to-red-100", "from-purple-50 to-purple-100", "from-pink-50 to-pink-100", "from-orange-50 to-orange-100"];
           const borderColors = ["border-blue-300", "border-red-300", "border-purple-300", "border-pink-300", "border-orange-300"];
           return (
-            <Card key={ward} style={{ animationDelay: `${idx * 80}ms` }} className={`animate-fadeIn group hover:shadow-xl hover:scale-105 transition-all duration-300 bg-gradient-to-br ${colors[idx]} border-2 ${borderColors[idx]}`}>
+            <Card key={ward} style={{ animationDelay: `${idx * 80}ms` }} className={`animate-fadeIn group hover:shadow-xl hover:scale-105 transition-all duration-300 bg-gradient-to-br ${colors[idx]} dark:from-slate-800 dark:to-slate-700 border-2 ${borderColors[idx]} dark:border-slate-600`}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-700">{ward}</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">{ward}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {occupied}/{total}
                 </div>
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                   {((occupied / total) * 100).toFixed(0)}% occupied
                 </p>
               </CardContent>
@@ -105,10 +105,10 @@ export default function BedManagementPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6 animate-slideUp border-cyan-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <Card className="mb-6 animate-slideUp border-cyan-200 dark:border-cyan-800 shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <Filter className="h-5 w-5 text-cyan-500" />
+            <Filter className="h-5 w-5 text-cyan-500 dark:text-cyan-400" />
             <div className="flex-1 flex gap-4">
               <div className="flex-1">
                 <label className="text-sm font-medium mb-1 block text-gray-700">Ward</label>
@@ -142,9 +142,9 @@ export default function BedManagementPage() {
       </Card>
 
       {/* Bed Grid */}
-      <Card className="animate-slideUp border-cyan-200 shadow-lg hover:shadow-2xl transition-shadow duration-300">
-        <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50">
-          <CardTitle className="text-cyan-900">Bed Overview ({filteredBeds.length} beds)</CardTitle>
+      <Card className="animate-slideUp border-cyan-200 dark:border-cyan-800 shadow-lg hover:shadow-2xl transition-shadow duration-300">
+        <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-slate-800 dark:to-slate-700">
+          <CardTitle className="text-cyan-900 dark:text-cyan-300">Bed Overview ({filteredBeds.length} beds)</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">

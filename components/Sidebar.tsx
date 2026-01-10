@@ -11,8 +11,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Activity,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/theme-context";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -24,16 +27,17 @@ const navigation = [
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div
       className={cn(
-        "flex flex-col bg-white border-r transition-all duration-300",
+        "flex flex-col bg-card border-r border-border transition-all duration-300",
         collapsed ? "w-16" : "w-64"
       )}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
         {!collapsed && (
           <div className="flex items-center space-x-2">
             <Activity className="h-8 w-8 text-primary" />
@@ -54,8 +58,8 @@ export default function Sidebar() {
               className={cn(
                 "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-primary text-white"
-                  : "text-gray-700 hover:bg-gray-100"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground/70 hover:bg-accent hover:text-foreground"
               )}
             >
               <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -65,17 +69,35 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Toggle Button */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="h-16 flex items-center justify-center border-t hover:bg-gray-50 transition-colors"
-      >
-        {collapsed ? (
-          <ChevronRight className="h-5 w-5 text-gray-500" />
-        ) : (
-          <ChevronLeft className="h-5 w-5 text-gray-500" />
-        )}
-      </button>
+      {/* Theme Toggle & Collapse Button */}
+      <div className="border-t border-border">
+        <button
+          onClick={toggleTheme}
+          className="w-full h-12 flex items-center justify-center hover:bg-accent transition-colors text-foreground/70 hover:text-foreground"
+          title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+        >
+          {theme === "light" ? (
+            <Moon className="h-5 w-5 flex-shrink-0" />
+          ) : (
+            <Sun className="h-5 w-5 flex-shrink-0" />
+          )}
+          {!collapsed && (
+            <span className="ml-3 text-sm font-medium">
+              {theme === "light" ? "Dark" : "Light"} Mode
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-full h-12 flex items-center justify-center border-t border-border hover:bg-accent transition-colors text-foreground/70 hover:text-foreground"
+        >
+          {collapsed ? (
+            <ChevronRight className="h-5 w-5" />
+          ) : (
+            <ChevronLeft className="h-5 w-5" />
+          )}
+        </button>
+      </div>
     </div>
   );
 }

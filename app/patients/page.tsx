@@ -68,11 +68,11 @@ export default function PatientsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 p-8">
       <div className="flex items-center justify-between mb-8 animate-fadeIn">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">Patient Management</h1>
-          <p className="text-gray-500 mt-2 text-lg">Manage patient records and admissions</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 dark:from-pink-400 dark:to-rose-400 bg-clip-text text-transparent">Patient Management</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Manage patient records and admissions</p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 shadow-lg hover:shadow-xl transition-all duration-300">
           <Plus className="h-4 w-4 mr-2" />
@@ -81,20 +81,20 @@ export default function PatientsPage() {
       </div>
 
       {/* Search and Filters */}
-      <Card className="mb-6 animate-slideUp border-pink-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <Card className="mb-6 animate-slideUp border-pink-200 dark:border-pink-800 shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-pink-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-pink-400 dark:text-pink-500" />
               <Input
                 placeholder="Search by name or patient ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-pink-200 focus:border-pink-500 focus:ring-pink-500"
+                className="pl-10 border-pink-200 dark:border-pink-800 dark:bg-slate-800 dark:text-white focus:border-pink-500 dark:focus:border-pink-600 focus:ring-pink-500"
               />
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-pink-500" />
+              <Filter className="h-5 w-5 text-pink-500 dark:text-pink-400" />
               <Select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as PatientStatus | "All")}
@@ -115,18 +115,18 @@ export default function PatientsPage() {
           <Card
             key={patient.id}
             style={{ animationDelay: `${idx * 100}ms` }}
-            className="animate-fadeIn hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer border-pink-200 bg-gradient-to-br from-white to-pink-50"
+            className="animate-fadeIn hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer border-pink-200 dark:border-pink-800 bg-gradient-to-br from-white to-pink-50 dark:from-slate-800 dark:to-slate-700"
             onClick={() => setSelectedPatient(patient)}
           >
-            <CardHeader className="pb-3 border-b border-pink-100">
+            <CardHeader className="pb-3 border-b border-pink-100 dark:border-pink-900">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center shadow-md">
                     <User className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg text-gray-900">{patient.name}</CardTitle>
-                    <p className="text-sm text-gray-500">ID: {patient.id}</p>
+                    <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{patient.name}</CardTitle>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">ID: {patient.id}</p>
                   </div>
                 </div>
                 {getStatusBadge(patient.status)}
@@ -134,8 +134,8 @@ export default function PatientsPage() {
             </CardHeader>
             <CardContent className="pt-4">
               <div className="space-y-2 text-sm">
-                <div className="flex items-center text-gray-600">
-                  <User className="h-4 w-4 mr-2 text-pink-500" />
+                <div className="flex items-center text-gray-600 dark:text-gray-300">
+                  <User className="h-4 w-4 mr-2 text-pink-500 dark:text-pink-400" />
                   {patient.age} years, {patient.gender}
                 </div>
                 <div className="flex items-center text-gray-600">

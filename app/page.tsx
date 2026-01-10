@@ -43,88 +43,88 @@ export default function Dashboard() {
   const currentPatients = patients.filter((p) => p.status === "Admitted").slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 p-8">
       <div className="mb-8 animate-fadeIn">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Dashboard</h1>
-        <p className="text-gray-500 mt-2 text-lg">Welcome to Hospital Management System</p>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">Dashboard</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Welcome to Hospital Management System</p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-blue-100 bg-gradient-to-br from-white to-blue-50">
+        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-blue-100 dark:border-blue-900 bg-gradient-to-br from-white to-blue-50 dark:from-slate-800 dark:to-slate-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Beds</CardTitle>
-            <Bed className="h-4 w-4 text-blue-500 group-hover:scale-125 transition-transform duration-300" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Beds</CardTitle>
+            <Bed className="h-4 w-4 text-blue-500 dark:text-blue-400 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{totalBeds}</div>
-            <p className="text-xs text-muted-foreground">Hospital capacity</p>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalBeds}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Hospital capacity</p>
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-red-100 bg-gradient-to-br from-white to-red-50">
+        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-red-100 dark:border-red-900 bg-gradient-to-br from-white to-red-50 dark:from-slate-800 dark:to-slate-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Occupied Beds</CardTitle>
-            <UserCheck className="h-4 w-4 text-red-500 group-hover:scale-125 transition-transform duration-300" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Occupied Beds</CardTitle>
+            <UserCheck className="h-4 w-4 text-red-500 dark:text-red-400 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{occupiedBeds}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-red-600 dark:text-red-400">{occupiedBeds}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {((occupiedBeds / totalBeds) * 100).toFixed(1)}% occupancy
             </p>
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-green-100 bg-gradient-to-br from-white to-green-50">
+        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-green-100 dark:border-green-900 bg-gradient-to-br from-white to-green-50 dark:from-slate-800 dark:to-slate-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Beds</CardTitle>
-            <Bed className="h-4 w-4 text-green-500 group-hover:scale-125 transition-transform duration-300" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Available Beds</CardTitle>
+            <Bed className="h-4 w-4 text-green-500 dark:text-green-400 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{availableBeds}</div>
-            <p className="text-xs text-muted-foreground">Ready for admission</p>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{availableBeds}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Ready for admission</p>
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-indigo-100 bg-gradient-to-br from-white to-indigo-50">
+        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-indigo-100 dark:border-indigo-900 bg-gradient-to-br from-white to-indigo-50 dark:from-slate-800 dark:to-slate-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Patients</CardTitle>
-            <Users className="h-4 w-4 text-indigo-500 group-hover:scale-125 transition-transform duration-300" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Patients</CardTitle>
+            <Users className="h-4 w-4 text-indigo-500 dark:text-indigo-400 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indigo-600">{totalPatients}</div>
-            <p className="text-xs text-muted-foreground">Currently admitted</p>
+            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{totalPatients}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Currently admitted</p>
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-orange-100 bg-gradient-to-br from-white to-orange-50">
+        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-orange-100 dark:border-orange-900 bg-gradient-to-br from-white to-orange-50 dark:from-slate-800 dark:to-slate-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Discharges</CardTitle>
-            <UserMinus className="h-4 w-4 text-orange-500 group-hover:scale-125 transition-transform duration-300" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Pending Discharges</CardTitle>
+            <UserMinus className="h-4 w-4 text-orange-500 dark:text-orange-400 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{pendingDischarges}</div>
-            <p className="text-xs text-muted-foreground">Ready for discharge</p>
+            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{pendingDischarges}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Ready for discharge</p>
           </CardContent>
         </Card>
 
-        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-purple-100 bg-gradient-to-br from-white to-purple-50">
+        <Card className="group hover:shadow-xl hover:scale-105 transition-all duration-300 animate-fadeIn border-purple-100 dark:border-purple-900 bg-gradient-to-br from-white to-purple-50 dark:from-slate-800 dark:to-slate-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Claims</CardTitle>
-            <FileText className="h-4 w-4 text-purple-500 group-hover:scale-125 transition-transform duration-300" />
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Active Claims</CardTitle>
+            <FileText className="h-4 w-4 text-purple-500 dark:text-purple-400 group-hover:scale-125 transition-transform duration-300" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{activeClaims}</div>
-            <p className="text-xs text-muted-foreground">Pending approval</p>
+            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{activeClaims}</div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Pending approval</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         {/* Bed Status Widget */}
-        <Card className="lg:col-span-2 animate-slideUp border-blue-200 shadow-lg hover:shadow-2xl transition-shadow duration-300">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardTitle className="text-blue-900">Bed Status Overview</CardTitle>
+        <Card className="lg:col-span-2 animate-slideUp border-blue-200 dark:border-blue-800 shadow-lg hover:shadow-2xl transition-shadow duration-300">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700">
+            <CardTitle className="text-blue-900 dark:text-blue-300">Bed Status Overview</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-6">
@@ -182,9 +182,9 @@ export default function Dashboard() {
         </Card>
 
         {/* Recent Activity */}
-        <Card className="animate-slideUp border-purple-200 shadow-lg hover:shadow-2xl transition-shadow duration-300">
-          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50">
-            <CardTitle className="text-purple-900">Recent Activity</CardTitle>
+        <Card className="animate-slideUp border-purple-200 dark:border-purple-800 shadow-lg hover:shadow-2xl transition-shadow duration-300">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-slate-800 dark:to-slate-700">
+            <CardTitle className="text-purple-900 dark:text-purple-300">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">
@@ -221,11 +221,11 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Performance Chart */}
-        <Card className="lg:col-span-2 animate-slideUp border-indigo-200 shadow-lg hover:shadow-2xl transition-shadow duration-300">
-          <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50">
+        <Card className="lg:col-span-2 animate-slideUp border-indigo-200 dark:border-indigo-800 shadow-lg hover:shadow-2xl transition-shadow duration-300">
+          <CardHeader className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-slate-800 dark:to-slate-700">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-indigo-900">Weekly Performance</CardTitle>
-              <TrendingUp className="h-5 w-5 text-indigo-400 animate-bounce-sm" />
+              <CardTitle className="text-indigo-900 dark:text-indigo-300">Weekly Performance</CardTitle>
+              <TrendingUp className="h-5 w-5 text-indigo-400 dark:text-indigo-300 animate-bounce-sm" />
             </div>
           </CardHeader>
           <CardContent className="pt-6">
@@ -285,9 +285,9 @@ export default function Dashboard() {
         </Card>
 
         {/* Current Patients Widget */}
-        <Card className="animate-slideUp border-green-200 shadow-lg hover:shadow-2xl transition-shadow duration-300">
-          <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-            <CardTitle className="text-green-900">Current Patients</CardTitle>
+        <Card className="animate-slideUp border-green-200 dark:border-green-800 shadow-lg hover:shadow-2xl transition-shadow duration-300">
+          <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-slate-800 dark:to-slate-700">
+            <CardTitle className="text-green-900 dark:text-green-300">Current Patients</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-3">

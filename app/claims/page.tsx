@@ -78,11 +78,11 @@ export default function ClaimsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 p-8">
       <div className="flex items-center justify-between mb-8 animate-fadeIn">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">Insurance & Claims</h1>
-          <p className="text-gray-500 mt-2 text-lg">Manage insurance claims and approvals</p>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">Insurance & Claims</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Manage insurance claims and approvals</p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg hover:shadow-xl transition-all duration-300">
           <Plus className="h-4 w-4 mr-2" />
