@@ -153,10 +153,10 @@ export interface Activity extends BaseDocument {
 
 export interface Hospital extends BaseDocument {
   name: string;
-  code: string; // Unique identifier like "hosp_001"
+  code: string; // Auto-generated unique identifier from hospital name (DB-safe, used as database name)
   address: string;
   phone: string;
-  email: string;
+  email: string; // Must be unique across all hospitals
   isActive: boolean;
   logo?: string;
   registrationNumber?: string;
@@ -171,7 +171,7 @@ export type UserRole = "Admin" | "Doctor" | "Nurse" | "Staff";
 export interface User extends BaseDocument {
   hospitalId: ObjectId; // Links user to hospital
   name: string;
-  email: string;
+  email: string; // Must be unique across all users in all hospitals
   passwordHash: string;
   role: UserRole;
   isActive: boolean;

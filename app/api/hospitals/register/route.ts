@@ -3,13 +3,25 @@ import { getDb } from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
 
+// Helper function to generate a unique hospital code from name
+function generateHospitalCode(name: string): string {
+  // Remove special characters and spaces, convert to lowercase
+  const sanitized = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .substring(0, 20); // Limit to 20 chars to keep DB name under 38 bytes
+  
+  // Add random suffix to ensure uniqueness
+  const random = Math.random().toString(36).substring(2, 6);
+  return `${sanitized}_${random}`;
+}
+
 // Register a new hospital and its first admin user
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const {
       hospitalName,
-      hospitalCode,
       hospitalAddress,
       hospitalPhone,
       hospitalEmail,
@@ -22,7 +34,6 @@ export async function POST(request: Request) {
     // Validation
     if (
       !hospitalName ||
-      !hospitalCode ||
       !hospitalAddress ||
       !hospitalPhone ||
       !hospitalEmail ||
@@ -38,19 +49,19 @@ export async function POST(request: Request) {
 
     const db = await getDb();
 
-    // Check if hospital code already exists
+    // Check if hospital email already exists (unique constraint)
     const existingHospital = await db.collection("hospitals").findOne({
-      code: hospitalCode.toLowerCase(),
+      email: hospitalEmail.toLowerCase(),
     });
 
     if (existingHospital) {
       return NextResponse.json(
-        { error: "Hospital code already exists" },
+        { error: "Hospital email already registered" },
         { status: 400 }
       );
     }
 
-    // Check if admin email already exists
+    // Check if admin email already exists (unique constraint)
     const existingUser = await db.collection("users").findOne({
       email: adminEmail.toLowerCase(),
     });
@@ -62,10 +73,13 @@ export async function POST(request: Request) {
       );
     }
 
+    // Auto-generate unique hospital code from hospital name
+    const hospitalCode = generateHospitalCode(hospitalName);
+
     // Create hospital
     const hospital = {
       name: hospitalName,
-      code: hospitalCode.toLowerCase(),
+      code: hospitalCode,
       address: hospitalAddress,
       phone: hospitalPhone,
       email: hospitalEmail.toLowerCase(),

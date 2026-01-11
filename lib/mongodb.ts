@@ -22,10 +22,10 @@ export async function getDb(): Promise<Db> {
   return client.db("doklink_main");
 }
 
-// Get hospital-specific database
-export async function getHospitalDb(hospitalId: string | ObjectId): Promise<Db> {
+// Get hospital-specific database by hospital code (sanitized name)
+export async function getHospitalDb(hospitalCode: string): Promise<Db> {
   const client = await clientPromise;
-  const id = typeof hospitalId === 'string' ? hospitalId : hospitalId.toString();
-  // Each hospital gets its own database: dh_<id> (shortened to fit MongoDB 38 byte limit)
-  return client.db(`dh_${id}`);
+  // Each hospital gets its own database using their code: dh_<code>
+  // Code is already sanitized during generation to be DB-safe and under 38 bytes
+  return client.db(`dh_${hospitalCode}`);
 }

@@ -15,7 +15,6 @@ export default function SignupPage() {
 
   // Hospital details
   const [hospitalName, setHospitalName] = useState("");
-  const [hospitalCode, setHospitalCode] = useState("");
   const [hospitalAddress, setHospitalAddress] = useState("");
   const [hospitalPhone, setHospitalPhone] = useState("");
   const [hospitalEmail, setHospitalEmail] = useState("");
@@ -28,7 +27,7 @@ export default function SignupPage() {
   const [adminPhone, setAdminPhone] = useState("");
 
   const handleNext = () => {
-    if (!hospitalName || !hospitalCode || !hospitalAddress || !hospitalPhone || !hospitalEmail) {
+    if (!hospitalName || !hospitalAddress || !hospitalPhone || !hospitalEmail) {
       setError("Please fill in all hospital details");
       return;
     }
@@ -58,7 +57,6 @@ export default function SignupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hospitalName,
-          hospitalCode,
           hospitalAddress,
           hospitalPhone,
           hospitalEmail,
@@ -104,30 +102,17 @@ export default function SignupPage() {
 
           {step === 1 ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Hospital Name *
-                  </label>
-                  <Input
-                    placeholder="City General Hospital"
-                    value={hospitalName}
-                    onChange={(e) => setHospitalName(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Hospital Code * (Unique)
-                  </label>
-                  <Input
-                    placeholder="hosp_001"
-                    value={hospitalCode}
-                    onChange={(e) => setHospitalCode(e.target.value.toLowerCase())}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Hospital Name *
+                </label>
+                <Input
+                  placeholder="City General Hospital"
+                  value={hospitalName}
+                  onChange={(e) => setHospitalName(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-gray-500">A unique hospital code will be auto-generated from this name</p>
               </div>
 
               <div className="space-y-2">

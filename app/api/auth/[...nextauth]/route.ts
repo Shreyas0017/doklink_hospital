@@ -63,8 +63,8 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.hospitalId = user.hospitalId;
+        token.hospitalCode = user.hospitalCode; // Store hospital code for DB access
         token.hospitalName = user.hospitalName;
-        token.hospitalCode = user.hospitalCode;
       }
       return token;
     },
@@ -73,8 +73,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.hospitalId = token.hospitalId as string;
+        session.user.hospitalCode = token.hospitalCode as string; // Add hospital code to session
         session.user.hospitalName = token.hospitalName as string;
-        session.user.hospitalCode = token.hospitalCode as string;
       }
       return session;
     },

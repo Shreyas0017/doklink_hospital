@@ -12,7 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const db = await getHospitalDb(session.user.hospitalId);
+    const db = await getHospitalDb(session.user.hospitalCode);
     const activities = await db
       .collection<Activity>("activities")
       .find()
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const db = await getHospitalDb(session.user.hospitalId);
+    const db = await getHospitalDb(session.user.hospitalCode);
 
     const activityData = {
       ...body,
