@@ -8,7 +8,7 @@ export async function GET() {
     return Response.json({
       success: true,
       dbName: db.databaseName,
-      collections: collections.map(c => c.name),
+      collections: collections.map((c) => c.name),
     });
   } catch (error: any) {
     return Response.json(

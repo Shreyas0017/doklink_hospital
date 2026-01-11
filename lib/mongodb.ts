@@ -1,23 +1,22 @@
 import { MongoClient, Db } from "mongodb";
 
-const uri = process.env.MONGODB_URI!;
+const uri = process.env.MONGODB_URI;
 if (!uri) throw new Error("MONGODB_URI missing");
 
-const dbName = process.env.MONGODB_DB_NAME || "doklink";
-
 declare global {
-  let _mongo: Promise<MongoClient> | undefined;
+  // eslint-disable-next-line no-var
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-
-const client = new MongoClient(uri, options);
+const client = new MongoClient(uri);
 
 const clientPromise =
-  global._mongo ?? (global._mongo = client.connect());
+  global._mongoClientPromise ??
+  (global._mongoClientPromise = client.connect());
 
 export default clientPromise;
 
 export async function getDb(): Promise<Db> {
   const client = await clientPromise;
-  return client.db(dbName);
+  return client.db("doklink");
 }
