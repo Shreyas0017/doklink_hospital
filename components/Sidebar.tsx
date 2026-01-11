@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   Bed,
@@ -13,6 +14,9 @@ import {
   Activity,
   Moon,
   Sun,
+  LogOut,
+  Building2,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme-context";
@@ -28,6 +32,11 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
+  const { data: session } = useSession();
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/login" });
+  };
 
   return (
     <div
@@ -41,11 +50,34 @@ export default function Sidebar() {
         {!collapsed && (
           <div className="flex items-center space-x-2">
             <Activity className="h-8 w-8 text-primary" />
-            <span className="font-bold text-xl text-primary">MediCare</span>
+            <span className="font-bold text-xl text-primary">DokLink</span>
           </div>
         )}
         {collapsed && <Activity className="h-8 w-8 text-primary mx-auto" />}
       </div>
+
+      {/* Hospital & User Info */}
+      {session && !collapsed && (
+        <div className="px-4 py-3 border-b border-border bg-accent/50">
+          <div className="flex items-center space-x-2 mb-2">
+            <Building2 className="h-4 w-4 text-primary" />
+            <span className="text-xs font-semibold text-foreground truncate">
+              {session.user.hospitalName}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <UserCircle className="h-4 w-4 text-foreground/60" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-foreground truncate">
+                {session.user.name}
+              </p>
+              <p className="text-xs text-foreground/60 truncate">
+                {session.user.role}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-4 space-y-1">
@@ -69,7 +101,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Theme Toggle & Collapse Button */}
+      {/* Theme Toggle, Logout & Collapse Button */}
       <div className="border-t border-border">
         <button
           onClick={toggleTheme}
@@ -87,6 +119,18 @@ export default function Sidebar() {
             </span>
           )}
         </button>
+
+        {session && (
+          <button
+            onClick={handleLogout}
+            className="w-full h-12 flex items-center justify-center border-t border-border hover:bg-accent transition-colors text-foreground/70 hover:text-foreground"
+            title="Logout"
+          >
+            <LogOut className="h-5 w-5 flex-shrink-0" />
+            {!collapsed && <span className="ml-3 text-sm font-medium">Logout</span>}
+          </button>
+        )}
+
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="w-full h-12 flex items-center justify-center border-t border-border hover:bg-accent transition-colors text-foreground/70 hover:text-foreground"

@@ -81,7 +81,8 @@ export default function BedManagementPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to add bed");
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
       const addedBed = await response.json();
@@ -96,7 +97,7 @@ export default function BedManagementPage() {
       alert("Bed added successfully!");
     } catch (error) {
       console.error("Error adding bed:", error);
-      alert("Failed to add bed. Please try again.");
+      alert(`Failed to add bed: ${error instanceof Error ? error.message : "Please try again."}`);
     }
   };
 

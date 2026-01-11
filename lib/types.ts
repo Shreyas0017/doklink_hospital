@@ -44,6 +44,7 @@ export type ActivityType = "admission" | "discharge" | "claim";
 ========================= */
 
 export interface Bed extends BaseDocument {
+  hospitalId: ObjectId; // Multi-tenant field
   bedNumber: string;
   ward: Ward;
   status: BedStatus;
@@ -55,6 +56,7 @@ export interface Bed extends BaseDocument {
 ========================= */
 
 export interface Patient extends BaseDocument {
+  hospitalId: ObjectId; // Multi-tenant field
   name: string;
   age: number;
   gender: Gender;
@@ -77,6 +79,7 @@ export interface Patient extends BaseDocument {
 ========================= */
 
 export interface MedicalDocument extends BaseDocument {
+  hospitalId: ObjectId; // Multi-tenant field
   patientId: ObjectId;
   type: DocumentType;
   name: string;
@@ -115,6 +118,7 @@ export interface ApprovalHistory {
 ========================= */
 
 export interface Claim extends BaseDocument {
+  hospitalId: ObjectId; // Multi-tenant field
   patientId: ObjectId;
   patientName: string;
   policyNumber: string;
@@ -136,10 +140,26 @@ export interface Claim extends BaseDocument {
 ========================= */
 
 export interface Activity extends BaseDocument {
+  hospitalId: ObjectId; // Multi-tenant field
   type: ActivityType;
   description: string;
   referenceId?: ObjectId;
   time: Date;
+}
+
+/* =========================
+   HOSPITAL (Multi-Tenant)
+========================= */
+
+export interface Hospital extends BaseDocument {
+  name: string;
+  code: string; // Unique identifier like "hosp_001"
+  address: string;
+  phone: string;
+  email: string;
+  isActive: boolean;
+  logo?: string;
+  registrationNumber?: string;
 }
 
 /* =========================
@@ -149,11 +169,14 @@ export interface Activity extends BaseDocument {
 export type UserRole = "Admin" | "Doctor" | "Nurse" | "Staff";
 
 export interface User extends BaseDocument {
+  hospitalId: ObjectId; // Links user to hospital
   name: string;
   email: string;
   passwordHash: string;
   role: UserRole;
   isActive: boolean;
+  phone?: string;
+  department?: string;
 }
 
 /* =========================
