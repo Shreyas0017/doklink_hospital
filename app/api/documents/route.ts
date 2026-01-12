@@ -41,17 +41,38 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const db = await getHospitalDb(session.user.hospitalCode);
 
+    // Generate next document ID (d1, d2, d3...)
+    const allDocuments = await db.collection("documents")
+      .find({}, { projection: { _id: 1 } })
+      .toArray();
+    
+    let nextDocNumber = 1;
+    if (allDocuments.length > 0) {
+      const numericIds = allDocuments
+        .map(d => {
+          const match = d._id.toString().match(/^d(\d+)$/);
+          return match ? parseInt(match[1]) : null;
+        })
+        .filter(id => id !== null);
+      
+      if (numericIds.length > 0) {
+        nextDocNumber = Math.max(...numericIds) + 1;
+      }
+    }
+    const docId = `d${nextDocNumber}`;
+
     const documentData = {
+      _id: docId,
       ...body,
-      hospitalId: new ObjectId(session.user.hospitalId),
+      hospitalId: session.user.hospitalId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    const result = await db.collection("documents").insertOne(documentData);
+    await db.collection("documents").insertOne(documentData);
 
     return NextResponse.json(
-      { ...documentData, id: result.insertedId.toString() },
+      { ...documentData, id: docId },
       { status: 201 }
     );
   } catch (error) {

@@ -8,15 +8,21 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  const isAuthPage = request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/signup");
+  const isAuthPage = request.nextUrl.pathname.startsWith("/login");
   const isApiAuth = request.nextUrl.pathname.startsWith("/api/auth");
-  const isPublicApi = request.nextUrl.pathname === "/api/hospitals/register";
+  
+  // Redirect signup to login (removed public signup)
+  if (request.nextUrl.pathname.startsWith("/signup")) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
   // Allow auth pages and auth API routes
-  if (isAuthPage || isApiAuth || isPublicApi) {
+  if (isAuthPage || isApiAuth) {
     if (token && isAuthPage) {
-      // Redirect to home if already logged in
+      // Redirect based on role
+      if (token.role === "SuperAdmin") {
+        return NextResponse.redirect(new URL("/superadmin", request.url));
+      }
       return NextResponse.redirect(new URL("/", request.url));
     }
     return NextResponse.next();

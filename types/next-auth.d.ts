@@ -7,9 +7,9 @@ declare module "next-auth" {
       email: string;
       name: string;
       role: string;
-      hospitalId: string;
-      hospitalName: string;
-      hospitalCode: string;
+      hospitalId?: string; // Optional for SuperAdmin
+      hospitalName?: string; // Optional for SuperAdmin
+      hospitalCode?: string; // Optional for SuperAdmin
     };
   }
 
@@ -18,9 +18,9 @@ declare module "next-auth" {
     email: string;
     name: string;
     role: string;
-    hospitalId: string;
-    hospitalName: string;
-    hospitalCode: string;
+    hospitalId?: string; // Optional for SuperAdmin
+    hospitalName?: string; // Optional for SuperAdmin
+    hospitalCode?: string; // Optional for SuperAdmin
   }
 }
 
@@ -28,8 +28,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: string;
-    hospitalId: string;
-    hospitalName: string;
-    hospitalCode: string;
+    hospitalId?: string; // Optional for SuperAdmin
+    hospitalName?: string; // Optional for SuperAdmin
+    hospitalCode?: string; // Optional for SuperAdmin
   }
 }

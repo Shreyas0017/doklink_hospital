@@ -16,9 +16,18 @@ function generateHospitalCode(name: string): string {
   return `${sanitized}_${random}`;
 }
 
-// Register a new hospital and its first admin user
+// Register a new hospital and its first admin user (SuperAdmin only)
 export async function POST(request: Request) {
   try {
+    // Check SuperAdmin authorization
+    const userRole = request.headers.get('x-user-role');
+    if (userRole !== 'SuperAdmin') {
+      return NextResponse.json(
+        { error: "Unauthorized. Only SuperAdmin can create hospitals" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const {
       hospitalName,
@@ -29,6 +38,7 @@ export async function POST(request: Request) {
       adminEmail,
       adminPassword,
       adminPhone,
+      adminRole, // "HospitalAdmin" or "BasicUser"
     } = body;
 
     // Validation
@@ -47,6 +57,10 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate role
+    const validRoles = ["HospitalAdmin", "BasicUser"];
+    const userRoleToAssign = adminRole && validRoles.includes(adminRole) ? adminRole : "HospitalAdmin";
+
     const db = await getDb();
 
     // Check if hospital email already exists (unique constraint)
@@ -60,6 +74,23 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Generate next hospital ID (h1, h2, h3...)
+    const lastHospital = await db.collection("hospitals")
+      .find()
+      .sort({ _id: -1 })
+      .limit(1)
+      .toArray();
+    
+    let nextHospitalNumber = 1;
+    if (lastHospital.length > 0 && lastHospital[0]._id) {
+      const lastId = lastHospital[0]._id.toString();
+      const match = lastId.match(/^h(\d+)$/);
+      if (match) {
+        nextHospitalNumber = parseInt(match[1]) + 1;
+      }
+    }
+    const hospitalId = `h${nextHospitalNumber}`;
 
     // Check if admin email already exists (unique constraint)
     const existingUser = await db.collection("users").findOne({
@@ -76,8 +107,30 @@ export async function POST(request: Request) {
     // Auto-generate unique hospital code from hospital name
     const hospitalCode = generateHospitalCode(hospitalName);
 
-    // Create hospital
+    // Hash password
+    const passwordHash = await bcrypt.hash(adminPassword, 10);
+
+    // Generate next user ID (serial number)
+    // Get all users and find the highest numeric ID
+    const allUsers = await db.collection("users")
+      .find({}, { projection: { _id: 1 } })
+      .toArray();
+    
+    let nextUserNumber = 1;
+    if (allUsers.length > 0) {
+      const numericIds = allUsers
+        .map(u => parseInt(u._id.toString()))
+        .filter(id => !isNaN(id));
+      
+      if (numericIds.length > 0) {
+        nextUserNumber = Math.max(...numericIds) + 1;
+      }
+    }
+    const userId = nextUserNumber.toString();
+
+    // Create hospital with custom ID
     const hospital = {
+      _id: hospitalId,
       name: hospitalName,
       code: hospitalCode,
       address: hospitalAddress,
@@ -88,19 +141,16 @@ export async function POST(request: Request) {
       updatedAt: new Date(),
     };
 
-    const hospitalResult = await db.collection("hospitals").insertOne(hospital);
-    const hospitalId = hospitalResult.insertedId;
+    await db.collection("hospitals").insertOne(hospital);
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(adminPassword, 10);
-
-    // Create admin user
+    // Create hospital user (admin or basic)
     const user = {
+      _id: userId,
       hospitalId,
       name: adminName,
       email: adminEmail.toLowerCase(),
       passwordHash,
-      role: "Admin",
+      role: userRoleToAssign,
       isActive: true,
       phone: adminPhone || "",
       department: "Administration",

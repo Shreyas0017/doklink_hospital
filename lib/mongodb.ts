@@ -19,7 +19,9 @@ export default clientPromise;
 // Get main database for shared collections (users, hospitals)
 export async function getDb(): Promise<Db> {
   const client = await clientPromise;
-  return client.db("doklink_main");
+  // Use the database name from connection string or default to "doklink"
+  const dbName = process.env.MONGODB_DB_NAME || "doklink";
+  return client.db(dbName);
 }
 
 // Get hospital-specific database by hospital code (sanitized name)

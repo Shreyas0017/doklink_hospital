@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 import {
@@ -50,11 +52,21 @@ interface Activity {
 /* ================= COMPONENT ================= */
 
 export default function Dashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [beds, setBeds] = useState<Bed[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [claims, setClaims] = useState<Claim[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+
+  /* ================= REDIRECT SUPERADMIN ================= */
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user?.role === "SuperAdmin") {
+      router.push("/superadmin");
+    }
+  }, [status, session, router]);
 
   /* ================= FETCH DATA ================= */
 

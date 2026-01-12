@@ -17,22 +17,53 @@ import {
   LogOut,
   Building2,
   UserCircle,
+  Shield,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme-context";
-
-const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Bed Management", href: "/beds", icon: Bed },
-  { name: "Patients", href: "/patients", icon: Users },
-  { name: "Insurance & Claims", href: "/claims", icon: FileText },
-];
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
   const { data: session } = useSession();
+
+  // Dynamic navigation based on user role
+  const getNavigation = () => {
+    const baseNavigation = [
+      { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    ];
+
+    // SuperAdmin sees only their dashboard
+    if (session?.user?.role === "SuperAdmin") {
+      return [
+        { name: "Super Admin", href: "/superadmin", icon: Shield },
+        { name: "Manage Users", href: "/users", icon: UserCog },
+      ];
+    }
+
+    // HospitalAdmin sees hospital operations + user management
+    if (session?.user?.role === "HospitalAdmin") {
+      return [
+        ...baseNavigation,
+        { name: "Bed Management", href: "/beds", icon: Bed },
+        { name: "Patients", href: "/patients", icon: Users },
+        { name: "Insurance & Claims", href: "/claims", icon: FileText },
+        { name: "Manage Users", href: "/users", icon: UserCog },
+      ];
+    }
+
+    // BasicUser sees only hospital operations
+    return [
+      ...baseNavigation,
+      { name: "Bed Management", href: "/beds", icon: Bed },
+      { name: "Patients", href: "/patients", icon: Users },
+      { name: "Insurance & Claims", href: "/claims", icon: FileText },
+    ];
+  };
+
+  const navigation = getNavigation();
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/login" });
@@ -59,12 +90,14 @@ export default function Sidebar() {
       {/* Hospital & User Info */}
       {session && !collapsed && (
         <div className="px-4 py-3 border-b border-border bg-accent/50">
-          <div className="flex items-center space-x-2 mb-2">
-            <Building2 className="h-4 w-4 text-primary" />
-            <span className="text-xs font-semibold text-foreground truncate">
-              {session.user.hospitalName}
-            </span>
-          </div>
+          {session.user.role !== "SuperAdmin" && (
+            <div className="flex items-center space-x-2 mb-2">
+              <Building2 className="h-4 w-4 text-primary" />
+              <span className="text-xs font-semibold text-foreground truncate">
+                {session.user.hospitalName}
+              </span>
+            </div>
+          )}
           <div className="flex items-center space-x-2">
             <UserCircle className="h-4 w-4 text-foreground/60" />
             <div className="flex-1 min-w-0">

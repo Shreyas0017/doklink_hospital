@@ -1,11 +1,9 @@
-import { ObjectId } from "mongodb";
-
 /* =========================
    BASE / COMMON
 ========================= */
 
 export interface BaseDocument {
-  _id?: ObjectId;
+  _id?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -44,11 +42,11 @@ export type ActivityType = "admission" | "discharge" | "claim";
 ========================= */
 
 export interface Bed extends BaseDocument {
-  hospitalId: ObjectId; // Multi-tenant field
+  hospitalId: string; // Multi-tenant field (h1, h2, etc.)
   bedNumber: string;
   ward: Ward;
   status: BedStatus;
-  patientId?: ObjectId;
+  patientId?: string;
 }
 
 /* =========================
@@ -56,14 +54,14 @@ export interface Bed extends BaseDocument {
 ========================= */
 
 export interface Patient extends BaseDocument {
-  hospitalId: ObjectId; // Multi-tenant field
+  hospitalId: string; // Multi-tenant field (h1, h2, etc.)
   name: string;
   age: number;
   gender: Gender;
   admissionDate: Date;
   dischargeDate?: Date;
   diagnosis: string;
-  assignedBed?: ObjectId;
+  assignedBed?: string;
   status: PatientStatus;
   phone: string;
   email?: string;
@@ -79,8 +77,8 @@ export interface Patient extends BaseDocument {
 ========================= */
 
 export interface MedicalDocument extends BaseDocument {
-  hospitalId: ObjectId; // Multi-tenant field
-  patientId: ObjectId;
+  hospitalId: string; // Multi-tenant field (h1, h2, etc.)
+  patientId: string;
   type: DocumentType;
   name: string;
   date: Date;
@@ -92,7 +90,7 @@ export interface MedicalDocument extends BaseDocument {
 ========================= */
 
 export interface DailyExpense {
-  _id?: ObjectId;
+  _id?: string;
   date: Date;
   description: string;
   amount: number;
@@ -106,7 +104,7 @@ export interface DailyExpense {
 ========================= */
 
 export interface ApprovalHistory {
-  _id?: ObjectId;
+  _id?: string;
   date: Date;
   description: string;
   amount: number;
@@ -118,8 +116,8 @@ export interface ApprovalHistory {
 ========================= */
 
 export interface Claim extends BaseDocument {
-  hospitalId: ObjectId; // Multi-tenant field
-  patientId: ObjectId;
+  hospitalId: string; // Multi-tenant field (h1, h2, etc.)
+  patientId: string;
   patientName: string;
   policyNumber: string;
   insurer: string;
@@ -140,10 +138,10 @@ export interface Claim extends BaseDocument {
 ========================= */
 
 export interface Activity extends BaseDocument {
-  hospitalId: ObjectId; // Multi-tenant field
+  hospitalId: string; // Multi-tenant field (h1, h2, etc.)
   type: ActivityType;
   description: string;
-  referenceId?: ObjectId;
+  referenceId?: string;
   time: Date;
 }
 
@@ -166,10 +164,13 @@ export interface Hospital extends BaseDocument {
    USER / AUTH (NextAuth)
 ========================= */
 
-export type UserRole = "Admin" | "Doctor" | "Nurse" | "Staff";
+// SuperAdmin: Can create hospitals and manage hospital admins
+// HospitalAdmin: Can manage users within their hospital
+// BasicUser: Regular hospital staff with limited permissions
+export type UserRole = "SuperAdmin" | "HospitalAdmin" | "BasicUser";
 
 export interface User extends BaseDocument {
-  hospitalId: ObjectId; // Links user to hospital
+  hospitalId?: string; // Optional for SuperAdmin (not tied to any hospital), format: h1, h2, etc.
   name: string;
   email: string; // Must be unique across all users in all hospitals
   passwordHash: string;
@@ -177,6 +178,7 @@ export interface User extends BaseDocument {
   isActive: boolean;
   phone?: string;
   department?: string;
+  permissions?: string[]; // Optional: granular permissions for BasicUser
 }
 
 /* =========================
