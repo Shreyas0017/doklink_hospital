@@ -3,11 +3,6 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
   const isAuthPage = request.nextUrl.pathname.startsWith("/login");
   const isApiAuth = request.nextUrl.pathname.startsWith("/api/auth");
   
@@ -16,32 +11,58 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Allow auth pages and auth API routes
-  if (isAuthPage || isApiAuth) {
-    if (token && isAuthPage) {
-      // Redirect based on role
+  // Allow auth API routes
+  if (isApiAuth) {
+    return NextResponse.next();
+  }
+
+  try {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+
+    // If on login page and already authenticated, redirect to dashboard
+    if (isAuthPage && token) {
       if (token.role === "SuperAdmin") {
         return NextResponse.redirect(new URL("/superadmin", request.url));
       }
       return NextResponse.redirect(new URL("/", request.url));
     }
+
+    // Allow access to login page
+    if (isAuthPage) {
+      return NextResponse.next();
+    }
+
+    // Protect all other routes - require authentication
+    if (!token) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Add hospital context to headers for API routes
+    const response = NextResponse.next();
+    if (token.hospitalId) {
+      response.headers.set("x-hospital-id", token.hospitalId as string);
+    }
+    if (token.id) {
+      response.headers.set("x-user-id", token.id as string);
+    }
+    if (token.role) {
+      response.headers.set("x-user-role", token.role as string);
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Middleware error:", error);
+    // On error, redirect to login for protected routes
+    if (!isAuthPage) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
     return NextResponse.next();
   }
-
-  // Protect all other routes
-  if (!token) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Add hospital context to headers for API routes
-  const response = NextResponse.next();
-  response.headers.set("x-hospital-id", token.hospitalId as string);
-  response.headers.set("x-user-id", token.id as string);
-  response.headers.set("x-user-role", token.role as string);
-
-  return response;
 }
 
 export const config = {

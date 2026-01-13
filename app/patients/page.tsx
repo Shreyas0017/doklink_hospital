@@ -476,7 +476,7 @@ export default function PatientsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle>{selectedPatient?.name}</DialogTitle>
-                <DialogDescription>Patient ID: {selectedPatient?.id}</DialogDescription>
+                <DialogDescription>UHID: {selectedPatient?.uhid}</DialogDescription>
               </div>
               {selectedPatient && getStatusBadge(selectedPatient.status)}
             </div>
@@ -733,10 +733,9 @@ export default function PatientsPage() {
                   setShowDischargeDialog(true);
                   setClaimInsurance(null);
                   setPolicyNumber("");
-                  // Check if patient has an existing claim
+                  // Check if patient has an existing claim by matching patient name
                   const existingClaim = claims.find(c => 
-                    c.patientName === selectedPatient.name && 
-                    c.id?.includes(selectedPatient.id)
+                    c.patientName === selectedPatient.name
                   );
                   setPatientClaim(existingClaim || null);
                 }}

@@ -134,7 +134,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 60 * 60, // 1 hour session
+    maxAge: 24 * 60 * 60, // 24 hour session
   },
   cookies: {
     sessionToken: {
@@ -149,6 +149,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
 };
 
 const handler = NextAuth(authOptions);
