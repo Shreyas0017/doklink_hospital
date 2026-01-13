@@ -44,6 +44,9 @@ export default function PatientsPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDischargeDialog, setShowDischargeDialog] = useState(false);
   const [showReAdmitDialog, setShowReAdmitDialog] = useState(false);
+  const [claimInsurance, setClaimInsurance] = useState<boolean | null>(null);
+  const [policyNumber, setPolicyNumber] = useState("");
+  const [patientClaim, setPatientClaim] = useState<any>(null);
   const [foundPatient, setFoundPatient] = useState<Patient | null>(null);
   const [documentFilter, setDocumentFilter] = useState<DocumentType | "All">("All");
   const [loading, setLoading] = useState(true);
@@ -728,6 +731,14 @@ export default function PatientsPage() {
                 variant="destructive"
                 onClick={() => {
                   setShowDischargeDialog(true);
+                  setClaimInsurance(null);
+                  setPolicyNumber("");
+                  // Check if patient has an existing claim
+                  const existingClaim = claims.find(c => 
+                    c.patientName === selectedPatient.name && 
+                    c.id?.includes(selectedPatient.id)
+                  );
+                  setPatientClaim(existingClaim || null);
                 }}
               >
                 <UserMinus className="h-4 w-4 mr-2" />
@@ -739,43 +750,269 @@ export default function PatientsPage() {
       </Dialog>
 
       {/* Discharge Dialog */}
-      <Dialog open={showDischargeDialog} onOpenChange={setShowDischargeDialog}>
-        <DialogContent onClose={() => setShowDischargeDialog(false)}>
+      <Dialog open={showDischargeDialog} onOpenChange={() => {
+        setShowDischargeDialog(false);
+        setClaimInsurance(null);
+        setPolicyNumber("");
+        setPatientClaim(null);
+      }}>
+        <DialogContent onClose={() => {
+          setShowDischargeDialog(false);
+          setClaimInsurance(null);
+          setPolicyNumber("");
+          setPatientClaim(null);
+        }}>
           <DialogHeader>
             <DialogTitle>Initiate Discharge Process</DialogTitle>
             <DialogDescription>
-              Generate discharge documents for {selectedPatient?.name}
+              Discharge process for {selectedPatient?.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 p-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
-                The following documents will be generated:
-              </p>
-              <ul className="mt-2 space-y-1 text-sm text-blue-700 list-disc list-inside">
-                <li>Discharge Summary</li>
-                <li>Final Bill</li>
-                <li>Prescription</li>
-                <li>Medical Certificate</li>
-              </ul>
-            </div>
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowDischargeDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  // Handle discharge logic
-                  setShowDischargeDialog(false);
-                  setSelectedPatient(null);
-                }}
-              >
-                Generate Documents & Discharge
-              </Button>
-            </div>
+            {/* Step 1: Ask about insurance claim */}
+            {claimInsurance === null && (
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-blue-900 mb-2">
+                    Does the patient want to claim insurance?
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    Select whether the patient wants to file an insurance claim before discharge.
+                  </p>
+                </div>
+                <div className="flex gap-3 justify-center pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setClaimInsurance(false)}
+                    className="flex-1"
+                  >
+                    No, Discharge Directly
+                  </Button>
+                  <Button
+                    onClick={() => setClaimInsurance(true)}
+                    className="flex-1"
+                  >
+                    Yes, Claim Insurance
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* Step 2a: Direct discharge without insurance */}
+            {claimInsurance === false && (
+              <>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-sm text-green-800">
+                    Patient will be discharged without insurance claim. The following documents will be generated:
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm text-green-700 list-disc list-inside">
+                    <li>Discharge Summary</li>
+                    <li>Final Bill</li>
+                    <li>Prescription</li>
+                    <li>Medical Certificate</li>
+                  </ul>
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setClaimInsurance(null)}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      // Handle direct discharge
+                      try {
+                        if (!selectedPatient) return;
+                        
+                        const response = await fetch("/api/patients", {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            id: selectedPatient.id,
+                            status: "Discharged",
+                            dischargeDate: new Date().toISOString(),
+                            assignedBed: null,
+                          }),
+                        });
+
+                        if (response.ok) {
+                          const updatedPatient = await response.json();
+                          setPatients(patients.map(p => p.id === selectedPatient.id ? updatedPatient : p));
+                          
+                          // Free up the bed if assigned
+                          if (selectedPatient.assignedBed) {
+                            const bed = beds.find(b => b.bedNumber === selectedPatient.assignedBed);
+                            if (bed) {
+                              await fetch("/api/beds", {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  id: bed.id,
+                                  status: "available",
+                                  patientId: null,
+                                  bedNumber: bed.bedNumber,
+                                  ward: bed.ward,
+                                }),
+                              });
+                              setBeds(beds.map(b => b.id === bed.id ? { ...b, status: "available", patientId: null } : b));
+                            }
+                          }
+                          
+                          alert("Patient discharged successfully!");
+                          setShowDischargeDialog(false);
+                          setSelectedPatient(null);
+                          setClaimInsurance(null);
+                        }
+                      } catch (error) {
+                        console.error("Error discharging patient:", error);
+                        alert("Failed to discharge patient");
+                      }
+                    }}
+                  >
+                    Confirm Discharge
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* Step 2b: Insurance claim flow */}
+            {claimInsurance === true && (
+              <>
+                {patientClaim ? (
+                  // Patient has existing claim - show status
+                  <>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm font-semibold text-blue-900 mb-3">
+                        Existing Insurance Claim Found
+                      </p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">Policy Number:</span>
+                          <span className="font-medium text-blue-900">{patientClaim.policyNumber}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">Insurer:</span>
+                          <span className="font-medium text-blue-900">{patientClaim.insurer}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">Claim Amount:</span>
+                          <span className="font-medium text-blue-900">${patientClaim.claimAmount?.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-blue-700">Status:</span>
+                          <span className="font-medium text-blue-900">{patientClaim.status}</span>
+                        </div>
+                        {patientClaim.status === "Approved" && (
+                          <div className="flex justify-between">
+                            <span className="text-blue-700">Approved Amount:</span>
+                            <span className="font-medium text-green-700">${patientClaim.approvedAmount?.toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-sm text-green-800">
+                        Insurance claim is <strong>{patientClaim.status}</strong>. You can now proceed with discharge.
+                      </p>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setClaimInsurance(null)}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          // Handle discharge with claim
+                          try {
+                            if (!selectedPatient) return;
+                            
+                            const response = await fetch("/api/patients", {
+                              method: "PUT",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                id: selectedPatient.id,
+                                status: "Discharged",
+                                dischargeDate: new Date().toISOString(),
+                                assignedBed: null,
+                              }),
+                            });
+
+                            if (response.ok) {
+                              const updatedPatient = await response.json();
+                              setPatients(patients.map(p => p.id === selectedPatient.id ? updatedPatient : p));
+                              
+                              // Free up the bed if assigned
+                              if (selectedPatient.assignedBed) {
+                                const bed = beds.find(b => b.bedNumber === selectedPatient.assignedBed);
+                                if (bed) {
+                                  await fetch("/api/beds", {
+                                    method: "PUT",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      id: bed.id,
+                                      status: "available",
+                                      patientId: null,
+                                      bedNumber: bed.bedNumber,
+                                      ward: bed.ward,
+                                    }),
+                                  });
+                                  setBeds(beds.map(b => b.id === bed.id ? { ...b, status: "available", patientId: null } : b));
+                                }
+                              }
+                              
+                              alert("Patient discharged successfully with insurance claim!");
+                              setShowDischargeDialog(false);
+                              setSelectedPatient(null);
+                              setClaimInsurance(null);
+                              setPolicyNumber("");
+                              setPatientClaim(null);
+                            }
+                          } catch (error) {
+                            console.error("Error discharging patient:", error);
+                            alert("Failed to discharge patient");
+                          }
+                        }}
+                      >
+                        Proceed with Discharge
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  // No claim exists - prompt to create one
+                  <>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <p className="text-sm text-yellow-800">
+                        No insurance claim found for this patient. Please create an insurance claim first before proceeding with discharge.
+                      </p>
+                      <p className="text-sm text-yellow-700 mt-2">
+                        You can create a claim from the <strong>Insurance & Claims</strong> page.
+                      </p>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setClaimInsurance(null)}
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setShowDischargeDialog(false);
+                          setClaimInsurance(null);
+                          // Optionally redirect to claims page
+                          window.location.href = "/claims";
+                        }}
+                      >
+                        Go to Claims Page
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>

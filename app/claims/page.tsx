@@ -575,13 +575,11 @@ export default function ClaimsPage() {
                   onChange={(e) => setNewClaim({ ...newClaim, patientId: e.target.value })}
                 >
                   <option value="">Select Patient</option>
-                  {patients
-                    .filter((p) => p.status === "Waiting" || p.status === "Admitted")
-                    .map((patient) => (
-                      <option key={patient.id} value={patient.id}>
-                        {patient.name} - {patient.id}
-                      </option>
-                    ))}
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name} ({patient.uhid}) - {patient.status}
+                    </option>
+                  ))}
                 </Select>
               </div>
               <div>
