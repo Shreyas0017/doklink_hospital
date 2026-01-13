@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "create-superadmin": "tsx scripts/create-superadmin.ts",
-    "test-superadmin": "tsx scripts/test-superadmin.ts"
+    "create-superadmin": "tsx scripts/create-superadmin.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -576,7 +576,7 @@ export default function ClaimsPage() {
                 >
                   <option value="">Select Patient</option>
                   {patients
-                    .filter((p) => p.status === "Admitted")
+                    .filter((p) => p.status === "Waiting" || p.status === "Admitted")
                     .map((patient) => (
                       <option key={patient.id} value={patient.id}>
                         {patient.name} - {patient.id}

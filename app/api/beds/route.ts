@@ -83,3 +83,60 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, _id, ...updateData } = body;
+    
+    // Use either id or _id from the body
+    const bedId = id || _id;
+    
+    if (!bedId) {
+      return NextResponse.json(
+        { error: "Bed ID is required for update" },
+        { status: 400 }
+      );
+    }
+
+    const db = await getHospitalDb(session.user.hospitalCode);
+
+    // Update the bed document
+    const result = await db.collection("beds").updateOne(
+      { _id: bedId },
+      { 
+        $set: {
+          ...updateData,
+          updatedAt: new Date(),
+        }
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { error: "Bed not found" },
+        { status: 404 }
+      );
+    }
+
+    // Fetch and return the updated bed
+    const updatedBed = await db.collection("beds").findOne({ _id: bedId });
+    
+    return NextResponse.json({
+      ...updatedBed,
+      id: updatedBed?._id?.toString(),
+      patientId: updatedBed?.patientId?.toString(),
+    });
+  } catch (error) {
+    console.error("Failed to update bed:", error);
+    return NextResponse.json(
+      { error: "Failed to update bed" },
+      { status: 500 }
+    );
+  }
+}

@@ -23,7 +23,7 @@ export type Ward =
   | "Maternity"
   | "Emergency";
 
-export type PatientStatus = "Admitted" | "Discharged";
+export type PatientStatus = "Waiting" | "Admitted" | "Discharged";
 
 export type ClaimStatus = "Pending" | "Approved" | "Rejected" | "Partial";
 

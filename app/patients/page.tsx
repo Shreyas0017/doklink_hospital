@@ -113,7 +113,7 @@ export default function PatientsPage() {
         allergies: newPatient.allergies || "None",
         medications: newPatient.medications || "None",
         admissionDate: new Date().toISOString(),
-        status: "Admitted" as PatientStatus,
+        status: (newPatient.assignedBed ? "Admitted" : "Waiting") as PatientStatus,
         assignedBed: newPatient.assignedBed || undefined,
       };
 
@@ -135,14 +135,22 @@ export default function PatientsPage() {
         const selectedBed = beds.find(b => b.bedNumber === newPatient.assignedBed);
         if (selectedBed) {
           await fetch(`/api/beds`, {
-            method: "POST",
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              ...selectedBed,
+              id: selectedBed.id,
               status: "occupied",
-              patientId: patientId,
+              patientId: addedPatient.id,
+              bedNumber: selectedBed.bedNumber,
+              ward: selectedBed.ward,
             }),
           });
+          // Update local beds state to reflect the change
+          setBeds(beds.map(b => 
+            b.id === selectedBed.id 
+              ? { ...b, status: "occupied", patientId: addedPatient.id }
+              : b
+          ));
         }
       }
 
@@ -193,11 +201,16 @@ export default function PatientsPage() {
   const availableBeds = beds.filter(b => b.status === "available");
 
   const getStatusBadge = (status: PatientStatus) => {
-    return status === "Admitted" ? (
-      <Badge variant="default">Admitted</Badge>
-    ) : (
-      <Badge variant="secondary">Discharged</Badge>
-    );
+    switch (status) {
+      case "Waiting":
+        return <Badge variant="warning">Waiting</Badge>;
+      case "Admitted":
+        return <Badge variant="default">Admitted</Badge>;
+      case "Discharged":
+        return <Badge variant="secondary">Discharged</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
   };
 
   return (
@@ -234,6 +247,7 @@ export default function PatientsPage() {
                 className="w-40"
               >
                 <option value="All">All Status</option>
+                <option value="Waiting">Waiting</option>
                 <option value="Admitted">Admitted</option>
                 <option value="Discharged">Discharged</option>
               </Select>

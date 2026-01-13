@@ -24,6 +24,8 @@ export default function BedManagementPage() {
   const [selectedStatus, setSelectedStatus] = useState<BedStatus | "All">("All");
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [selectedPatientForBed, setSelectedPatientForBed] = useState("");
   const [newBed, setNewBed] = useState({ bedNumber: "", ward: "General" as Ward });
   const [loading, setLoading] = useState(true);
 
@@ -98,6 +100,132 @@ export default function BedManagementPage() {
     } catch (error) {
       console.error("Error adding bed:", error);
       alert(`Failed to add bed: ${error instanceof Error ? error.message : "Please try again."}`);
+    }
+  };
+
+  // Handle assigning a patient to a bed
+  const handleAssignPatient = async () => {
+    try {
+      if (!selectedBed || !selectedPatientForBed) {
+        alert("Please select a patient");
+        return;
+      }
+
+      const selectedPatient = patients.find(p => p.id === selectedPatientForBed);
+      if (!selectedPatient) {
+        alert("Patient not found");
+        return;
+      }
+
+      // Update bed status to occupied
+      const bedResponse = await fetch("/api/beds", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedBed.id,
+          status: "occupied",
+          patientId: selectedPatientForBed,
+          bedNumber: selectedBed.bedNumber,
+          ward: selectedBed.ward,
+        }),
+      });
+
+      if (!bedResponse.ok) {
+        throw new Error("Failed to update bed");
+      }
+
+      const updatedBed = await bedResponse.json();
+
+      // Update patient with assigned bed and change status to Admitted
+      const patientResponse = await fetch("/api/patients", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedPatientForBed,
+          assignedBed: selectedBed.bedNumber,
+          status: "Admitted",
+        }),
+      });
+
+      if (!patientResponse.ok) {
+        throw new Error("Failed to update patient");
+      }
+
+      // Update local state
+      setBeds(beds.map(b => b.id === selectedBed.id ? updatedBed : b));
+      setPatients(patients.map(p => 
+        p.id === selectedPatientForBed 
+          ? { ...p, assignedBed: selectedBed.bedNumber, status: "Admitted" }
+          : p
+      ));
+
+      setShowAssignDialog(false);
+      setSelectedBed(null);
+      setSelectedPatientForBed("");
+
+      alert("Patient assigned to bed successfully!");
+    } catch (error) {
+      console.error("Error assigning patient:", error);
+      alert(`Failed to assign patient: ${error instanceof Error ? error.message : "Please try again."}`);
+    }
+  };
+
+  // Handle discharging a patient from a bed
+  const handleDischargePatient = async () => {
+    try {
+      if (!selectedBed || !selectedBed.patientId) {
+        alert("No patient assigned to this bed");
+        return;
+      }
+
+      // Update bed status to available
+      const bedResponse = await fetch("/api/beds", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedBed.id,
+          status: "available",
+          patientId: null,
+          bedNumber: selectedBed.bedNumber,
+          ward: selectedBed.ward,
+        }),
+      });
+
+      if (!bedResponse.ok) {
+        throw new Error("Failed to update bed");
+      }
+
+      const updatedBed = await bedResponse.json();
+
+      // Update patient to remove assigned bed and change status to Discharged
+      const patientResponse = await fetch("/api/patients", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedBed.patientId,
+          assignedBed: null,
+          status: "Discharged",
+        }),
+      });
+
+      if (!patientResponse.ok) {
+        throw new Error("Failed to update patient");
+      }
+
+      // Update local state
+      setBeds(beds.map(b => b.id === selectedBed.id ? updatedBed : b));
+      setPatients(patients.map(p => 
+        p.id === selectedBed.patientId 
+          ? { ...p, assignedBed: null, status: "Discharged" }
+          : p
+      ));
+
+      setSelectedBed(null);
+
+      alert("Patient discharged from bed successfully!");
+    } catch (error) {
+      console.error("Error discharging patient:", error);
+      alert(`Failed to discharge patient: ${error instanceof Error ? error.message : "Please try again."}`);
     }
   };
 
@@ -323,7 +451,9 @@ export default function BedManagementPage() {
             {selectedBed?.status === "available" && (
               <div className="text-center py-8">
                 <p className="text-gray-500 mb-4">This bed is available for new patients</p>
-                <Button>Assign Patient</Button>
+                <Button onClick={() => {
+                  setShowAssignDialog(true);
+                }}>Assign Patient</Button>
               </div>
             )}
 
@@ -340,10 +470,12 @@ export default function BedManagementPage() {
                 Close
               </Button>
               {selectedBed?.status === "occupied" && (
-                <Button variant="destructive">Discharge Patient</Button>
+                <Button variant="destructive" onClick={handleDischargePatient}>Discharge Patient</Button>
               )}
               {selectedBed?.status === "available" && (
-                <Button>Assign Patient</Button>
+                <Button onClick={() => {
+                  setShowAssignDialog(true);
+                }}>Assign Patient</Button>
               )}
             </div>
           </div>
@@ -385,6 +517,51 @@ export default function BedManagementPage() {
               </Button>
               <Button onClick={handleAddBed}>
                 Add Bed
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Patient Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent onClose={() => setShowAssignDialog(false)}>
+          <DialogHeader>
+            <DialogTitle>Assign Patient to Bed {selectedBed?.bedNumber}</DialogTitle>
+            <DialogDescription>Select a patient to assign to this bed</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 p-6">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Select Patient</label>
+              <Select
+                value={selectedPatientForBed}
+                onChange={(e) => setSelectedPatientForBed(e.target.value)}
+              >
+                <option value="">Choose a patient...</option>
+                {patients
+                  .filter((p) => (p.status === "Waiting" || p.status === "Admitted") && !p.assignedBed)
+                  .map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name} - {patient.id} ({patient.diagnosis})
+                    </option>
+                  ))}
+              </Select>
+              {patients.filter((p) => (p.status === "Waiting" || p.status === "Admitted") && !p.assignedBed).length === 0 && (
+                <p className="text-sm text-gray-500 mt-2">No patients available for assignment</p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => {
+                setShowAssignDialog(false);
+                setSelectedPatientForBed("");
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAssignPatient}
+                disabled={!selectedPatientForBed}
+              >
+                Assign Patient
               </Button>
             </div>
           </div>

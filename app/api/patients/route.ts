@@ -83,3 +83,60 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, _id, ...updateData } = body;
+    
+    // Use either id or _id from the body
+    const patientId = id || _id;
+    
+    if (!patientId) {
+      return NextResponse.json(
+        { error: "Patient ID is required for update" },
+        { status: 400 }
+      );
+    }
+
+    const db = await getHospitalDb(session.user.hospitalCode);
+
+    // Update the patient document
+    const result = await db.collection("patients").updateOne(
+      { _id: patientId },
+      { 
+        $set: {
+          ...updateData,
+          updatedAt: new Date(),
+        }
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { error: "Patient not found" },
+        { status: 404 }
+      );
+    }
+
+    // Fetch and return the updated patient
+    const updatedPatient = await db.collection("patients").findOne({ _id: patientId });
+    
+    return NextResponse.json({
+      ...updatedPatient,
+      id: updatedPatient?._id?.toString(),
+      assignedBed: updatedPatient?.assignedBed?.toString(),
+    });
+  } catch (error) {
+    console.error("Failed to update patient:", error);
+    return NextResponse.json(
+      { error: "Failed to update patient" },
+      { status: 500 }
+    );
+  }
+}
