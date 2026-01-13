@@ -53,8 +53,18 @@ export interface Bed extends BaseDocument {
    PATIENT
 ========================= */
 
+export interface AdmissionHistory {
+  admissionDate: string;
+  dischargeDate?: string;
+  diagnosis: string;
+  assignedBed?: string;
+  medications?: string;
+  notes?: string;
+}
+
 export interface Patient extends BaseDocument {
   hospitalId: string; // Multi-tenant field (h1, h2, etc.)
+  uhid: string; // Unique Health ID for patient
   name: string;
   age: number;
   gender: Gender;
@@ -70,6 +80,7 @@ export interface Patient extends BaseDocument {
   bloodGroup?: string;
   allergies?: string;
   medications?: string;
+  admissionHistory?: AdmissionHistory[]; // Store previous admissions
 }
 
 /* =========================

@@ -43,10 +43,12 @@ export default function PatientsPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDischargeDialog, setShowDischargeDialog] = useState(false);
+  const [showReAdmitDialog, setShowReAdmitDialog] = useState(false);
+  const [foundPatient, setFoundPatient] = useState<Patient | null>(null);
   const [documentFilter, setDocumentFilter] = useState<DocumentType | "All">("All");
   const [loading, setLoading] = useState(true);
   const [newPatient, setNewPatient] = useState({
-    id: "",
+    uhid: "",
     name: "",
     age: "",
     gender: "Male",
@@ -89,6 +91,31 @@ export default function PatientsPage() {
     fetchData();
   }, []);
 
+  // Handle UHID search for existing patients
+  const handleUhidSearch = () => {
+    if (!newPatient.uhid.trim()) {
+      alert("Please enter a UHID to search");
+      return;
+    }
+
+    const existingPatient = patients.find(p => p.uhid?.toLowerCase() === newPatient.uhid.toLowerCase());
+    
+    if (existingPatient) {
+      if (existingPatient.status === "Discharged") {
+        // Found a discharged patient - allow re-admission
+        setFoundPatient(existingPatient);
+        setShowReAdmitDialog(true);
+        setShowAddDialog(false);
+      } else {
+        alert(`Patient with UHID ${newPatient.uhid} is already ${existingPatient.status.toLowerCase()} in the hospital.`);
+      }
+    } else {
+      // No existing patient, allow new registration with this UHID
+      setFoundPatient(null);
+      alert("No existing patient found with this UHID. You can proceed to register as a new patient.");
+    }
+  };
+
   // Handle adding a new patient
   const handleAddPatient = async () => {
     try {
@@ -97,10 +124,32 @@ export default function PatientsPage() {
         return;
       }
 
-      const patientId = newPatient.id || `P-${Date.now()}`;
+      // Auto-generate UHID
+      const allPatients = patients;
+      let nextUhidNumber = 1;
+      
+      if (allPatients.length > 0) {
+        const uhidNumbers = allPatients
+          .map(p => {
+            if (p.uhid) {
+              const match = p.uhid.match(/^P(\d+)$/);
+              return match ? parseInt(match[1]) : 0;
+            }
+            return 0;
+          })
+          .filter(num => num > 0);
+        
+        if (uhidNumbers.length > 0) {
+          nextUhidNumber = Math.max(...uhidNumbers) + 1;
+        }
+      }
+      
+      const uhid = `P${nextUhidNumber.toString().padStart(6, '0')}`;
+      const patientId = `p${Date.now()}`;
 
       const patientData = {
         id: patientId,
+        uhid: uhid,
         name: newPatient.name,
         age: parseInt(newPatient.age),
         gender: newPatient.gender,
@@ -115,6 +164,7 @@ export default function PatientsPage() {
         admissionDate: new Date().toISOString(),
         status: (newPatient.assignedBed ? "Admitted" : "Waiting") as PatientStatus,
         assignedBed: newPatient.assignedBed || undefined,
+        admissionHistory: [],
       };
 
       const response = await fetch("/api/patients", {
@@ -157,7 +207,7 @@ export default function PatientsPage() {
       setPatients([...patients, addedPatient]);
 
       setNewPatient({
-        id: "",
+        uhid: "",
         name: "",
         age: "",
         gender: "Male",
@@ -177,6 +227,106 @@ export default function PatientsPage() {
     } catch (error) {
       console.error("Error adding patient:", error);
       alert(`Failed to add patient: ${error.message}`);
+    }
+  };
+
+  // Handle re-admitting a discharged patient
+  const handleReAdmitPatient = async () => {
+    try {
+      if (!foundPatient) return;
+
+      // Move current admission to history
+      const currentAdmission = {
+        admissionDate: foundPatient.admissionDate,
+        dischargeDate: foundPatient.dischargeDate,
+        diagnosis: foundPatient.diagnosis,
+        assignedBed: foundPatient.assignedBed,
+        medications: foundPatient.medications,
+        notes: `Discharged on ${foundPatient.dischargeDate}`,
+      };
+
+      const updatedPatientData = {
+        id: foundPatient.id,
+        uhid: foundPatient.uhid,
+        name: newPatient.name || foundPatient.name,
+        age: newPatient.age ? parseInt(newPatient.age) : foundPatient.age,
+        gender: newPatient.gender || foundPatient.gender,
+        phone: newPatient.phone || foundPatient.phone,
+        email: newPatient.email || foundPatient.email,
+        address: newPatient.address || foundPatient.address,
+        bloodGroup: newPatient.bloodGroup || foundPatient.bloodGroup,
+        emergencyContact: newPatient.emergencyContact || foundPatient.emergencyContact,
+        diagnosis: newPatient.diagnosis || foundPatient.diagnosis,
+        allergies: newPatient.allergies || foundPatient.allergies,
+        medications: newPatient.medications || foundPatient.medications,
+        admissionDate: new Date().toISOString(),
+        dischargeDate: null,
+        status: (newPatient.assignedBed ? "Admitted" : "Waiting") as PatientStatus,
+        assignedBed: newPatient.assignedBed || undefined,
+        admissionHistory: [...(foundPatient.admissionHistory || []), currentAdmission],
+      };
+
+      const response = await fetch("/api/patients", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedPatientData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to re-admit patient");
+      }
+
+      const updatedPatient = await response.json();
+
+      // If a bed was assigned, update the bed status
+      if (newPatient.assignedBed) {
+        const selectedBed = beds.find(b => b.bedNumber === newPatient.assignedBed);
+        if (selectedBed) {
+          await fetch(`/api/beds`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: selectedBed.id,
+              status: "occupied",
+              patientId: foundPatient.id,
+              bedNumber: selectedBed.bedNumber,
+              ward: selectedBed.ward,
+            }),
+          });
+          setBeds(beds.map(b => 
+            b.id === selectedBed.id 
+              ? { ...b, status: "occupied", patientId: foundPatient.id }
+              : b
+          ));
+        }
+      }
+
+      // Update local state
+      setPatients(patients.map(p => p.id === foundPatient.id ? updatedPatient : p));
+
+      setNewPatient({
+        uhid: "",
+        name: "",
+        age: "",
+        gender: "Male",
+        phone: "",
+        email: "",
+        address: "",
+        bloodGroup: "A+",
+        emergencyContact: "",
+        diagnosis: "",
+        allergies: "",
+        medications: "",
+        assignedBed: "",
+      });
+      setShowReAdmitDialog(false);
+      setFoundPatient(null);
+
+      alert("Patient re-admitted successfully!");
+    } catch (error) {
+      console.error("Error re-admitting patient:", error);
+      alert(`Failed to re-admit patient: ${error.message}`);
     }
   };
 
@@ -273,7 +423,7 @@ export default function PatientsPage() {
                   </div>
                   <div>
                     <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{patient.name}</CardTitle>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">ID: {patient.id}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">UHID: {patient.uhid || patient.id}</p>
                   </div>
                 </div>
                 {getStatusBadge(patient.status)}
@@ -334,6 +484,7 @@ export default function PatientsPage() {
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="medical">Medical</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
+              <TabsTrigger value="history">Admission History</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -341,6 +492,13 @@ export default function PatientsPage() {
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Personal Information</h3>
                   <div className="space-y-3 text-sm">
+                    <div className="flex items-start">
+                      <User className="h-4 w-4 mr-2 mt-0.5 text-gray-400" />
+                      <div>
+                        <p className="text-gray-500">UHID</p>
+                        <p className="font-medium">{selectedPatient?.uhid || "Not assigned"}</p>
+                      </div>
+                    </div>
                     <div className="flex items-start">
                       <User className="h-4 w-4 mr-2 mt-0.5 text-gray-400" />
                       <div>
@@ -502,6 +660,63 @@ export default function PatientsPage() {
                 )}
               </div>
             </TabsContent>
+
+            <TabsContent value="history" className="space-y-6">
+              <h3 className="font-semibold text-lg">Previous Admissions</h3>
+              {selectedPatient?.admissionHistory && selectedPatient.admissionHistory.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedPatient.admissionHistory.map((admission, index) => (
+                    <div
+                      key={index}
+                      className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-gray-500">Admission Date</p>
+                          <p className="font-medium">
+                            {format(parseISO(admission.admissionDate), "PPP")}
+                          </p>
+                        </div>
+                        {admission.dischargeDate && (
+                          <div>
+                            <p className="text-gray-500">Discharge Date</p>
+                            <p className="font-medium">
+                              {format(parseISO(admission.dischargeDate), "PPP")}
+                            </p>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-gray-500">Diagnosis</p>
+                          <p className="font-medium">{admission.diagnosis}</p>
+                        </div>
+                        {admission.assignedBed && (
+                          <div>
+                            <p className="text-gray-500">Bed</p>
+                            <p className="font-medium">{admission.assignedBed}</p>
+                          </div>
+                        )}
+                        {admission.medications && (
+                          <div className="col-span-2">
+                            <p className="text-gray-500">Medications</p>
+                            <p className="font-medium">{admission.medications}</p>
+                          </div>
+                        )}
+                        {admission.notes && (
+                          <div className="col-span-2">
+                            <p className="text-gray-500">Notes</p>
+                            <p className="font-medium text-gray-600">{admission.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No previous admissions found for this patient
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
 
           <div className="flex justify-end gap-2 pt-6 border-t mt-6">
@@ -573,9 +788,24 @@ export default function PatientsPage() {
         >
           <DialogHeader>
             <DialogTitle>Add New Patient</DialogTitle>
-            <DialogDescription>Enter patient admission details</DialogDescription>
+            <DialogDescription>Enter patient admission details. UHID will be auto-generated.</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 p-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800 mb-2">
+                <strong>Search Existing Patient:</strong> Enter UHID to check if patient was previously registered.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter UHID (e.g., P000001)"
+                  value={newPatient.uhid}
+                  onChange={(e) => setNewPatient({ ...newPatient, uhid: e.target.value })}
+                />
+                <Button onClick={handleUhidSearch} variant="outline">
+                  Search
+                </Button>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block">Full Name *</label>
@@ -583,14 +813,6 @@ export default function PatientsPage() {
                   placeholder="John Doe"
                   value={newPatient.name}
                   onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Patient ID</label>
-                <Input
-                  placeholder="Auto-generated"
-                  value={newPatient.id}
-                  onChange={(e) => setNewPatient({ ...newPatient, id: e.target.value })}
                 />
               </div>
               <div>
@@ -707,6 +929,176 @@ export default function PatientsPage() {
               </Button>
               <Button onClick={handleAddPatient}>
                 Add Patient
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Re-Admit Patient Dialog */}
+      <Dialog open={showReAdmitDialog} onOpenChange={setShowReAdmitDialog}>
+        <DialogContent
+          className="max-w-3xl max-h-[90vh] overflow-y-auto"
+          onClose={() => {
+            setShowReAdmitDialog(false);
+            setFoundPatient(null);
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Re-Admit Patient</DialogTitle>
+            <DialogDescription>
+              Patient found with UHID: {foundPatient?.uhid}. Update details for re-admission.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 p-6">
+            {foundPatient && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 className="font-semibold text-green-900 mb-2">Previous Patient Details:</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><strong>Name:</strong> {foundPatient.name}</div>
+                  <div><strong>Age:</strong> {foundPatient.age} years</div>
+                  <div><strong>Gender:</strong> {foundPatient.gender}</div>
+                  <div><strong>Phone:</strong> {foundPatient.phone}</div>
+                  <div><strong>Blood Group:</strong> {foundPatient.bloodGroup}</div>
+                  <div><strong>Last Diagnosis:</strong> {foundPatient.diagnosis}</div>
+                  {foundPatient.admissionHistory && foundPatient.admissionHistory.length > 0 && (
+                    <div className="col-span-2 mt-2">
+                      <strong>Previous Admissions:</strong> {foundPatient.admissionHistory.length}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <p className="text-sm text-gray-600">
+              You can update the information below or keep the existing details. Only fill in the fields you want to change.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Full Name</label>
+                <Input
+                  placeholder={foundPatient?.name || "John Doe"}
+                  value={newPatient.name}
+                  onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Age</label>
+                <Input
+                  type="number"
+                  placeholder={foundPatient?.age?.toString() || "25"}
+                  value={newPatient.age}
+                  onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Gender</label>
+                <Select
+                  value={newPatient.gender || foundPatient?.gender}
+                  onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Phone</label>
+                <Input
+                  placeholder={foundPatient?.phone || "+1-555-0000"}
+                  value={newPatient.phone}
+                  onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Email</label>
+                <Input
+                  type="email"
+                  placeholder={foundPatient?.email || "patient@email.com"}
+                  value={newPatient.email}
+                  onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Emergency Contact</label>
+                <Input
+                  placeholder={foundPatient?.emergencyContact || "+1-555-0000"}
+                  value={newPatient.emergencyContact}
+                  onChange={(e) => setNewPatient({ ...newPatient, emergencyContact: e.target.value })}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium mb-1 block">Address</label>
+                <Input
+                  placeholder={foundPatient?.address || "123 Main St, City, State"}
+                  value={newPatient.address}
+                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium mb-1 block">Current Diagnosis *</label>
+                <Input
+                  placeholder="Enter current diagnosis"
+                  value={newPatient.diagnosis}
+                  onChange={(e) => setNewPatient({ ...newPatient, diagnosis: e.target.value })}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium mb-1 block">Allergies</label>
+                <Input
+                  placeholder={foundPatient?.allergies || "None"}
+                  value={newPatient.allergies}
+                  onChange={(e) => setNewPatient({ ...newPatient, allergies: e.target.value })}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium mb-1 block">Current Medications</label>
+                <Input
+                  placeholder={foundPatient?.medications || "None"}
+                  value={newPatient.medications}
+                  onChange={(e) => setNewPatient({ ...newPatient, medications: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Assign Bed</label>
+                <Select
+                  value={newPatient.assignedBed}
+                  onChange={(e) => setNewPatient({ ...newPatient, assignedBed: e.target.value })}
+                >
+                  <option value="">Select a bed (optional)</option>
+                  {availableBeds.map((bed) => (
+                    <option key={bed.id} value={bed.bedNumber}>
+                      {bed.bedNumber} ({bed.ward})
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button variant="outline" onClick={() => {
+                setShowReAdmitDialog(false);
+                setFoundPatient(null);
+                setNewPatient({
+                  uhid: "",
+                  name: "",
+                  age: "",
+                  gender: "Male",
+                  phone: "",
+                  email: "",
+                  address: "",
+                  bloodGroup: "A+",
+                  emergencyContact: "",
+                  diagnosis: "",
+                  allergies: "",
+                  medications: "",
+                  assignedBed: "",
+                });
+              }}>
+                Cancel
+              </Button>
+              <Button onClick={handleReAdmitPatient}>
+                Re-Admit Patient
               </Button>
             </div>
           </div>
