@@ -42,6 +42,7 @@ export type ActivityType = "admission" | "discharge" | "claim";
 ========================= */
 
 export interface Bed extends BaseDocument {
+  id?: string; // Add id for frontend use
   hospitalId: string; // Multi-tenant field (h1, h2, etc.)
   bedNumber: string;
   ward: Ward;
@@ -63,6 +64,7 @@ export interface AdmissionHistory {
 }
 
 export interface Patient extends BaseDocument {
+  id?: string; // Add id for frontend use
   hospitalId: string; // Multi-tenant field (h1, h2, etc.)
   uhid: string; // Unique Health ID for patient
   name: string;
@@ -88,6 +90,7 @@ export interface Patient extends BaseDocument {
 ========================= */
 
 export interface MedicalDocument extends BaseDocument {
+  id?: string; // Add id for frontend use
   hospitalId: string; // Multi-tenant field (h1, h2, etc.)
   patientId: string;
   type: DocumentType;

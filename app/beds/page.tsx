@@ -40,12 +40,10 @@ export default function BedManagementPage() {
         const bedsData = await bedsRes.json();
         const patientsData = await patientsRes.json();
         
-        // Safety check: ensure we always set arrays
         setBeds(Array.isArray(bedsData) ? bedsData : []);
         setPatients(Array.isArray(patientsData) ? patientsData : []);
       } catch (error) {
         console.error("Failed to fetch data:", error);
-        // Set empty arrays on error
         setBeds([]);
         setPatients([]);
       } finally {
@@ -55,16 +53,13 @@ export default function BedManagementPage() {
     fetchData();
   }, []);
 
-  // Handle adding a new bed
   const handleAddBed = async () => {
     try {
-      // Validate required fields
       if (!newBed.bedNumber || !newBed.ward) {
         alert("Please fill in all required fields");
         return;
       }
 
-      // Check if bed number already exists
       if (beds.some(b => b.bedNumber === newBed.bedNumber)) {
         alert("Bed number already exists!");
         return;
@@ -88,14 +83,9 @@ export default function BedManagementPage() {
       }
 
       const addedBed = await response.json();
-
-      // Update local state
       setBeds([...beds, addedBed]);
-
-      // Reset form and close dialog
       setNewBed({ bedNumber: "", ward: "General" });
       setShowAddDialog(false);
-
       alert("Bed added successfully!");
     } catch (error) {
       console.error("Error adding bed:", error);
@@ -103,7 +93,6 @@ export default function BedManagementPage() {
     }
   };
 
-  // Handle assigning a patient to a bed
   const handleAssignPatient = async () => {
     try {
       if (!selectedBed || !selectedPatientForBed) {
@@ -117,7 +106,6 @@ export default function BedManagementPage() {
         return;
       }
 
-      // Update bed status to occupied
       const bedResponse = await fetch("/api/beds", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -136,7 +124,6 @@ export default function BedManagementPage() {
 
       const updatedBed = await bedResponse.json();
 
-      // Update patient with assigned bed and change status to Admitted
       const patientResponse = await fetch("/api/patients", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -151,7 +138,6 @@ export default function BedManagementPage() {
         throw new Error("Failed to update patient");
       }
 
-      // Update local state
       setBeds(beds.map(b => b.id === selectedBed.id ? updatedBed : b));
       setPatients(patients.map(p => 
         p.id === selectedPatientForBed 
@@ -162,7 +148,6 @@ export default function BedManagementPage() {
       setShowAssignDialog(false);
       setSelectedBed(null);
       setSelectedPatientForBed("");
-
       alert("Patient assigned to bed successfully!");
     } catch (error) {
       console.error("Error assigning patient:", error);
@@ -170,7 +155,6 @@ export default function BedManagementPage() {
     }
   };
 
-  // Handle discharging a patient from a bed
   const handleDischargePatient = async () => {
     try {
       if (!selectedBed || !selectedBed.patientId) {
@@ -178,7 +162,6 @@ export default function BedManagementPage() {
         return;
       }
 
-      // Update bed status to available
       const bedResponse = await fetch("/api/beds", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -197,7 +180,6 @@ export default function BedManagementPage() {
 
       const updatedBed = await bedResponse.json();
 
-      // Update patient to remove assigned bed and change status to Discharged
       const patientResponse = await fetch("/api/patients", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -212,7 +194,6 @@ export default function BedManagementPage() {
         throw new Error("Failed to update patient");
       }
 
-      // Update local state
       setBeds(beds.map(b => b.id === selectedBed.id ? updatedBed : b));
       setPatients(patients.map(p => 
         p.id === selectedBed.patientId 
@@ -221,7 +202,6 @@ export default function BedManagementPage() {
       ));
 
       setSelectedBed(null);
-
       alert("Patient discharged from bed successfully!");
     } catch (error) {
       console.error("Error discharging patient:", error);
@@ -229,7 +209,7 @@ export default function BedManagementPage() {
     }
   };
 
-  if (loading) return <div className="p-8">Loading...</div>;
+  if (loading) return <div className="p-8 text-white">Loading...</div>;
 
   const filteredBeds = beds.filter((bed) => {
     const wardMatch = selectedWard === "All" || bed.ward === selectedWard;
@@ -246,22 +226,22 @@ export default function BedManagementPage() {
   const getBedStatusColor = (status: BedStatus) => {
     switch (status) {
       case "available":
-        return "bg-green-500";
+        return "bg-white";
       case "occupied":
-        return "bg-red-500";
+        return "bg-gray-600";
       case "maintenance":
-        return "bg-yellow-500";
+        return "bg-gray-400";
     }
   };
 
   const getBedStatusBadge = (status: BedStatus) => {
     switch (status) {
       case "available":
-        return <Badge variant="success">Available</Badge>;
+        return <Badge className="bg-white text-black">Available</Badge>;
       case "occupied":
-        return <Badge variant="destructive">Occupied</Badge>;
+        return <Badge className="bg-gray-700 text-white">Occupied</Badge>;
       case "maintenance":
-        return <Badge variant="warning">Maintenance</Badge>;
+        return <Badge className="bg-gray-500 text-white">Maintenance</Badge>;
     }
   };
 
@@ -274,35 +254,33 @@ export default function BedManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 p-8">
-      <div className="flex items-center justify-between mb-8 animate-fadeIn">
+    <div className="min-h-screen bg-black p-8">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400 bg-clip-text text-transparent">Bed Management</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Manage hospital beds and assignments</p>
+          <h1 className="text-4xl font-black text-white">Bed Management</h1>
+          <p className="text-gray-400 mt-2 text-lg">Manage hospital beds and assignments across all wards</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowAddDialog(true)} className="bg-white hover:bg-gray-200 text-black shadow-lg font-semibold">
+          <Plus className="h-5 w-5 mr-2" />
           Add New Bed
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        {Object.entries(wardStats).map(([ward, wardBeds], idx) => {
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        {Object.entries(wardStats).map(([ward, wardBeds]) => {
           const occupied = wardBeds.filter((b) => b.status === "occupied").length;
           const total = wardBeds.length;
-          const colors = ["from-blue-50 to-blue-100", "from-red-50 to-red-100", "from-purple-50 to-purple-100", "from-pink-50 to-pink-100", "from-orange-50 to-orange-100"];
-          const borderColors = ["border-blue-300", "border-red-300", "border-purple-300", "border-pink-300", "border-orange-300"];
           return (
-            <Card key={ward} style={{ animationDelay: `${idx * 80}ms` }} className={`animate-fadeIn group hover:shadow-xl hover:scale-105 transition-all duration-300 bg-gradient-to-br ${colors[idx]} dark:from-slate-800 dark:to-slate-700 border-2 ${borderColors[idx]} dark:border-slate-600`}>
+            <Card key={ward} className="bg-black border-2 border-white shadow-lg hover:shadow-xl transition-shadow group">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">{ward}</CardTitle>
+                <CardTitle className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-full text-center group-hover:bg-white group-hover:text-black transition-colors">{ward}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <div className="text-3xl font-black text-white">
                   {occupied}/{total}
                 </div>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm font-medium text-gray-400 mt-2">
                   {total > 0 ? ((occupied / total) * 100).toFixed(0) : 0}% occupied
                 </p>
               </CardContent>
@@ -312,16 +290,17 @@ export default function BedManagementPage() {
       </div>
 
       {/* Filters */}
-      <Card className="mb-6 animate-slideUp border-cyan-200 dark:border-cyan-800 shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <Card className="mb-6 border-2 border-white shadow-lg bg-black">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
-            <Filter className="h-5 w-5 text-cyan-500 dark:text-cyan-400" />
+            <Filter className="h-5 w-5 text-white" />
             <div className="flex-1 flex gap-4">
               <div className="flex-1">
-                <label className="text-sm font-medium mb-1 block text-gray-700">Ward</label>
+                <label className="text-sm font-medium mb-1 block text-white">Ward</label>
                 <Select
                   value={selectedWard}
                   onChange={(e) => setSelectedWard(e.target.value as Ward | "All")}
+                  className="border-2 border-white/20 focus:border-white bg-black text-white"
                 >
                   <option value="All">All Wards</option>
                   <option value="General">General</option>
@@ -332,10 +311,11 @@ export default function BedManagementPage() {
                 </Select>
               </div>
               <div className="flex-1">
-                <label className="text-sm font-medium mb-1 block text-gray-700">Status</label>
+                <label className="text-sm font-medium mb-1 block text-white">Status</label>
                 <Select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value as BedStatus | "All")}
+                  className="border-2 border-white/20 focus:border-white bg-black text-white"
                 >
                   <option value="All">All Status</option>
                   <option value="available">Available</option>
@@ -349,39 +329,36 @@ export default function BedManagementPage() {
       </Card>
 
       {/* Bed Grid */}
-      <Card className="animate-slideUp border-cyan-200 dark:border-cyan-800 shadow-lg hover:shadow-2xl transition-shadow duration-300">
-        <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-slate-800 dark:to-slate-700">
-          <CardTitle className="text-cyan-900 dark:text-cyan-300">Bed Overview ({filteredBeds.length} beds)</CardTitle>
+      <Card className="border-2 border-white shadow-lg bg-black">
+        <CardHeader className="bg-black text-white border-b-2 border-white">
+          <CardTitle className="text-white font-bold">Bed Overview ({filteredBeds.length} beds)</CardTitle>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 bg-black">
           {filteredBeds.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500">No beds found. Click "Add New Bed" to create one.</p>
+              <p className="text-gray-400">No beds found. Click "Add New Bed" to create one.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-              {filteredBeds.map((bed, idx) => (
+              {filteredBeds.map((bed) => (
                 <button
                   key={bed.id}
                   onClick={() => setSelectedBed(bed)}
-                  style={{ animationDelay: `${idx * 30}ms` }}
                   className={`
-                    p-4 rounded-lg border-2 transition-all hover:scale-110 hover:shadow-lg cursor-pointer animate-fadeIn
-                    ${bed.status === "available" ? "border-green-400 bg-gradient-to-br from-green-100 to-green-200 hover:from-green-200 hover:to-green-300 shadow-md" : ""}
-                    ${bed.status === "occupied" ? "border-red-400 bg-gradient-to-br from-red-100 to-red-200 hover:from-red-200 hover:to-red-300 shadow-md" : ""}
-                    ${bed.status === "maintenance" ? "border-yellow-400 bg-gradient-to-br from-yellow-100 to-yellow-200 hover:from-yellow-200 hover:to-yellow-300 shadow-md" : ""}
+                    p-4 rounded-lg border-2 transition-all hover:scale-110 hover:shadow-lg cursor-pointer
+                    ${bed.status === "available" ? "border-white bg-black text-white" : ""}
+                    ${bed.status === "occupied" ? "border-white bg-gray-700 text-white" : ""}
+                    ${bed.status === "maintenance" ? "border-gray-400 bg-gray-500 text-white" : ""}
                   `}
                 >
                   <div className="flex flex-col items-center text-center">
                     <div
-                      className={`w-3 h-3 rounded-full mb-2 ${getBedStatusColor(
-                        bed.status
-                      )}`}
+                      className={`w-3 h-3 rounded-full mb-2 ${getBedStatusColor(bed.status)} border border-current`}
                     />
                     <div className="font-bold text-sm">{bed.bedNumber}</div>
-                    <div className="text-xs text-gray-600 mt-1">{bed.ward}</div>
+                    <div className="text-xs opacity-70 mt-1">{bed.ward}</div>
                     {bed.status === "occupied" && bed.patientId && (
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs opacity-70 mt-1">
                         {patients.find((p) => p.id === bed.patientId)?.name.split(" ")[0]}
                       </div>
                     )}
@@ -395,14 +372,14 @@ export default function BedManagementPage() {
 
       {/* Bed Details Dialog */}
       <Dialog open={!!selectedBed} onOpenChange={() => setSelectedBed(null)}>
-        <DialogContent className="max-w-2xl" onClose={() => setSelectedBed(null)}>
+        <DialogContent className="max-w-2xl bg-black border-2 border-white text-white" onClose={() => setSelectedBed(null)}>
           <DialogHeader>
-            <DialogTitle>Bed Details - {selectedBed?.bedNumber}</DialogTitle>
-            <DialogDescription>{selectedBed?.ward} Ward</DialogDescription>
+            <DialogTitle className="text-white">Bed Details - {selectedBed?.bedNumber}</DialogTitle>
+            <DialogDescription className="text-gray-400">{selectedBed?.ward} Ward</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 p-6">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Status:</span>
+              <span className="text-sm font-medium text-white">Status:</span>
               {selectedBed && getBedStatusBadge(selectedBed.status)}
             </div>
 
@@ -412,34 +389,34 @@ export default function BedManagementPage() {
                   const patient = getPatientForBed(selectedBed.id);
                   if (!patient) return null;
                   return (
-                    <div className="border rounded-lg p-4 space-y-3">
-                      <h3 className="font-semibold text-lg">Patient Information</h3>
+                    <div className="border-2 border-white rounded-lg p-4 space-y-3">
+                      <h3 className="font-semibold text-lg text-white">Patient Information</h3>
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
-                          <span className="text-gray-500">Name:</span>
-                          <p className="font-medium">{patient.name}</p>
+                          <span className="text-gray-400">Name:</span>
+                          <p className="font-medium text-white">{patient.name}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Age:</span>
-                          <p className="font-medium">
+                          <span className="text-gray-400">Age:</span>
+                          <p className="font-medium text-white">
                             {patient.age} years ({patient.gender})
                           </p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Patient ID:</span>
-                          <p className="font-medium">{patient.id}</p>
+                          <span className="text-gray-400">Patient ID:</span>
+                          <p className="font-medium text-white">{patient.id}</p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Admission Date:</span>
-                          <p className="font-medium">{patient.admissionDate}</p>
+                          <span className="text-gray-400">Admission Date:</span>
+                          <p className="font-medium text-white">{patient.admissionDate}</p>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-gray-500">Diagnosis:</span>
-                          <p className="font-medium">{patient.diagnosis}</p>
+                          <span className="text-gray-400">Diagnosis:</span>
+                          <p className="font-medium text-white">{patient.diagnosis}</p>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-gray-500">Contact:</span>
-                          <p className="font-medium">{patient.phone}</p>
+                          <span className="text-gray-400">Contact:</span>
+                          <p className="font-medium text-white">{patient.phone}</p>
                         </div>
                       </div>
                     </div>
@@ -450,32 +427,28 @@ export default function BedManagementPage() {
 
             {selectedBed?.status === "available" && (
               <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">This bed is available for new patients</p>
-                <Button onClick={() => {
-                  setShowAssignDialog(true);
-                }}>Assign Patient</Button>
+                <p className="text-gray-400 mb-4">This bed is available for new patients</p>
+                <Button onClick={() => setShowAssignDialog(true)} className="bg-white hover:bg-gray-200 text-black font-semibold">Assign Patient</Button>
               </div>
             )}
 
             {selectedBed?.status === "maintenance" && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-yellow-800">
+              <div className="bg-white/10 border-2 border-white/30 rounded-lg p-4">
+                <p className="text-white">
                   This bed is currently under maintenance and not available for use.
                 </p>
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => setSelectedBed(null)}>
+            <div className="flex justify-end gap-2 pt-4 border-t-2 border-white/20">
+              <Button variant="outline" onClick={() => setSelectedBed(null)} className="border-2 border-white hover:bg-white hover:text-black text-white">
                 Close
               </Button>
               {selectedBed?.status === "occupied" && (
-                <Button variant="destructive" onClick={handleDischargePatient}>Discharge Patient</Button>
+                <Button onClick={handleDischargePatient} className="bg-white hover:bg-gray-200 text-black font-semibold">Discharge Patient</Button>
               )}
               {selectedBed?.status === "available" && (
-                <Button onClick={() => {
-                  setShowAssignDialog(true);
-                }}>Assign Patient</Button>
+                <Button onClick={() => setShowAssignDialog(true)} className="bg-white hover:bg-gray-200 text-black font-semibold">Assign Patient</Button>
               )}
             </div>
           </div>
@@ -484,25 +457,27 @@ export default function BedManagementPage() {
 
       {/* Add Bed Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent onClose={() => setShowAddDialog(false)}>
+        <DialogContent onClose={() => setShowAddDialog(false)} className="bg-black border-2 border-white text-white">
           <DialogHeader>
-            <DialogTitle>Add New Bed</DialogTitle>
-            <DialogDescription>Create a new bed in the system</DialogDescription>
+            <DialogTitle className="text-white">Add New Bed</DialogTitle>
+            <DialogDescription className="text-gray-400">Create a new bed in the system</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 p-6">
             <div>
-              <label className="text-sm font-medium mb-1 block">Bed Number</label>
+              <label className="text-sm font-medium mb-1 block text-white">Bed Number</label>
               <Input
                 placeholder="e.g., G-107"
                 value={newBed.bedNumber}
                 onChange={(e) => setNewBed({ ...newBed, bedNumber: e.target.value })}
+                className="border-2 border-white/20 focus:border-white bg-black text-white"
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Ward</label>
+              <label className="text-sm font-medium mb-1 block text-white">Ward</label>
               <Select
                 value={newBed.ward}
                 onChange={(e) => setNewBed({ ...newBed, ward: e.target.value as Ward })}
+                className="border-2 border-white/20 focus:border-white bg-black text-white"
               >
                 <option value="General">General</option>
                 <option value="ICU">ICU</option>
@@ -512,10 +487,10 @@ export default function BedManagementPage() {
               </Select>
             </div>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)} className="border-2 border-white hover:bg-white hover:text-black text-white">
                 Cancel
               </Button>
-              <Button onClick={handleAddBed}>
+              <Button onClick={handleAddBed} className="bg-white hover:bg-gray-200 text-black font-semibold">
                 Add Bed
               </Button>
             </div>
@@ -525,17 +500,18 @@ export default function BedManagementPage() {
 
       {/* Assign Patient Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-        <DialogContent onClose={() => setShowAssignDialog(false)}>
+        <DialogContent onClose={() => setShowAssignDialog(false)} className="bg-black border-2 border-white text-white">
           <DialogHeader>
-            <DialogTitle>Assign Patient to Bed {selectedBed?.bedNumber}</DialogTitle>
-            <DialogDescription>Select a patient to assign to this bed</DialogDescription>
+            <DialogTitle className="text-white">Assign Patient to Bed {selectedBed?.bedNumber}</DialogTitle>
+            <DialogDescription className="text-gray-400">Select a patient to assign to this bed</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 p-6">
             <div>
-              <label className="text-sm font-medium mb-1 block">Select Patient</label>
+              <label className="text-sm font-medium mb-1 block text-white">Select Patient</label>
               <Select
                 value={selectedPatientForBed}
                 onChange={(e) => setSelectedPatientForBed(e.target.value)}
+                className="border-2 border-white/20 focus:border-white bg-black text-white"
               >
                 <option value="">Choose a patient...</option>
                 {patients
@@ -547,19 +523,20 @@ export default function BedManagementPage() {
                   ))}
               </Select>
               {patients.filter((p) => (p.status === "Waiting" || p.status === "Admitted") && !p.assignedBed).length === 0 && (
-                <p className="text-sm text-gray-500 mt-2">No patients available for assignment</p>
+                <p className="text-sm text-gray-400 mt-2">No patients available for assignment</p>
               )}
             </div>
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => {
                 setShowAssignDialog(false);
                 setSelectedPatientForBed("");
-              }}>
+              }} className="border-2 border-white hover:bg-white hover:text-black text-white">
                 Cancel
               </Button>
               <Button 
                 onClick={handleAssignPatient}
                 disabled={!selectedPatientForBed}
+                className="bg-white hover:bg-gray-200 text-black font-semibold disabled:opacity-50"
               >
                 Assign Patient
               </Button>

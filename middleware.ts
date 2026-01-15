@@ -5,6 +5,7 @@ import { getToken } from "next-auth/jwt";
 export async function middleware(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname.startsWith("/login");
   const isApiAuth = request.nextUrl.pathname.startsWith("/api/auth");
+  const isLandingPage = request.nextUrl.pathname === "/";
   
   // Redirect signup to login (removed public signup)
   if (request.nextUrl.pathname.startsWith("/signup")) {
@@ -13,6 +14,11 @@ export async function middleware(request: NextRequest) {
 
   // Allow auth API routes
   if (isApiAuth) {
+    return NextResponse.next();
+  }
+
+  // Allow access to landing page without authentication
+  if (isLandingPage) {
     return NextResponse.next();
   }
 
@@ -27,7 +33,7 @@ export async function middleware(request: NextRequest) {
       if (token.role === "SuperAdmin") {
         return NextResponse.redirect(new URL("/superadmin", request.url));
       }
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
     // Allow access to login page

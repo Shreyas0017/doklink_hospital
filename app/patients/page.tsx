@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Patient, PatientStatus, DocumentType } from "@/lib/types";
+import type { MedicalDocument, Bed, Claim } from "@/lib/types";
 import {
   Plus,
   Search,
@@ -36,8 +37,9 @@ import { format, parseISO } from "date-fns";
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [documents, setDocuments] = useState([]);
-  const [beds, setBeds] = useState([]);
+  const [documents, setDocuments] = useState<MedicalDocument[]>([]);
+  const [beds, setBeds] = useState<Bed[]>([]);
+  const [claims, setClaims] = useState<Claim[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<PatientStatus | "All">("All");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -46,7 +48,7 @@ export default function PatientsPage() {
   const [showReAdmitDialog, setShowReAdmitDialog] = useState(false);
   const [claimInsurance, setClaimInsurance] = useState<boolean | null>(null);
   const [policyNumber, setPolicyNumber] = useState("");
-  const [patientClaim, setPatientClaim] = useState<any>(null);
+  const [patientClaim, setPatientClaim] = useState<Claim | null>(null);
   const [foundPatient, setFoundPatient] = useState<Patient | null>(null);
   const [documentFilter, setDocumentFilter] = useState<DocumentType | "All">("All");
   const [loading, setLoading] = useState(true);
@@ -69,24 +71,28 @@ export default function PatientsPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [patientsRes, docsRes, bedsRes] = await Promise.all([
+        const [patientsRes, docsRes, bedsRes, claimsRes] = await Promise.all([
           fetch("/api/patients"),
           fetch("/api/documents"),
           fetch("/api/beds"),
+          fetch("/api/claims"),
         ]);
         
         const patientsData = await patientsRes.json();
         const docsData = await docsRes.json();
         const bedsData = await bedsRes.json();
+        const claimsData = await claimsRes.json();
         
         setPatients(Array.isArray(patientsData) ? patientsData : []);
         setDocuments(Array.isArray(docsData) ? docsData : []);
         setBeds(Array.isArray(bedsData) ? bedsData : []);
+        setClaims(Array.isArray(claimsData) ? claimsData : []);
       } catch (error) {
         console.error("Failed to fetch data:", error);
         setPatients([]);
         setDocuments([]);
         setBeds([]);
+        setClaims([]);
       } finally {
         setLoading(false);
       }
@@ -229,7 +235,7 @@ export default function PatientsPage() {
       alert("Patient added successfully!");
     } catch (error) {
       console.error("Error adding patient:", error);
-      alert(`Failed to add patient: ${error.message}`);
+      alert(`Failed to add patient: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -329,7 +335,7 @@ export default function PatientsPage() {
       alert("Patient re-admitted successfully!");
     } catch (error) {
       console.error("Error re-admitting patient:", error);
-      alert(`Failed to re-admit patient: ${error.message}`);
+      alert(`Failed to re-admit patient: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -338,7 +344,7 @@ export default function PatientsPage() {
   const filteredPatients = patients.filter((patient) => {
     const matchesSearch =
       patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.id.toLowerCase().includes(searchTerm.toLowerCase());
+      patient.id?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "All" || patient.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -366,38 +372,44 @@ export default function PatientsPage() {
     }
   };
 
+  const formatDate = (date: Date | string | undefined, formatStr: string) => {
+    if (!date) return "N/A";
+    const dateObj = typeof date === "string" ? parseISO(date) : date;
+    return format(dateObj, formatStr);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-rose-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 p-8">
+    <div className="min-h-screen bg-black p-8">
       <div className="flex items-center justify-between mb-8 animate-fadeIn">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 dark:from-pink-400 dark:to-rose-400 bg-clip-text text-transparent">Patient Management</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Manage patient records and admissions</p>
+          <h1 className="text-4xl font-black text-white">Patient Management</h1>
+          <p className="text-gray-600 mt-2 text-lg">Manage patient records, admissions, and medical care</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 shadow-lg hover:shadow-xl transition-all duration-300">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowAddDialog(true)} className="bg-white hover:bg-gray-200 text-black shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+          <Plus className="h-5 w-5 mr-2" />
           Add Patient
         </Button>
       </div>
 
       {/* Search and Filters */}
-      <Card className="mb-6 animate-slideUp border-pink-200 dark:border-pink-800 shadow-lg hover:shadow-xl transition-shadow duration-300">
+      <Card className="mb-6 animate-slideUp border-2 border-white shadow-lg bg-black">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-pink-400 dark:text-pink-500" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search by name or patient ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-pink-200 dark:border-pink-800 dark:bg-slate-800 dark:text-white focus:border-pink-500 dark:focus:border-pink-600 focus:ring-pink-500"
+                className="pl-10 border-2 border-gray-700 focus:border-white focus:ring-white transition-colors bg-black text-white"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-pink-500 dark:text-pink-400" />
+            <div className="flex items-center gap-3">
+              <Filter className="h-5 w-5 text-gray-600" />
               <Select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as PatientStatus | "All")}
-                className="w-40"
+                className="w-40 border-2 border-gray-700 focus:border-white bg-black text-white"
               >
                 <option value="All">All Status</option>
                 <option value="Waiting">Waiting</option>
@@ -415,18 +427,18 @@ export default function PatientsPage() {
           <Card
             key={patient.id}
             style={{ animationDelay: `${idx * 100}ms` }}
-            className="animate-fadeIn hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer border-pink-200 dark:border-pink-800 bg-gradient-to-br from-white to-pink-50 dark:from-slate-800 dark:to-slate-700"
+            className="animate-fadeIn hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-white shadow-lg bg-black hover:bg-gray-900"
             onClick={() => setSelectedPatient(patient)}
           >
-            <CardHeader className="pb-3 border-b border-pink-100 dark:border-pink-900">
+            <CardHeader className="pb-3 border-b border-gray-700">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center shadow-md">
-                    <User className="h-6 w-6 text-white" />
+                  <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md">
+                    <User className="h-6 w-6 text-black" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{patient.name}</CardTitle>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">UHID: {patient.uhid || patient.id}</p>
+                    <CardTitle className="text-lg text-white">{patient.name}</CardTitle>
+                    <p className="text-sm text-gray-500">UHID: {patient.uhid || patient.id}</p>
                   </div>
                 </div>
                 {getStatusBadge(patient.status)}
@@ -434,15 +446,15 @@ export default function PatientsPage() {
             </CardHeader>
             <CardContent className="pt-4">
               <div className="space-y-2 text-sm">
-                <div className="flex items-center text-gray-600 dark:text-gray-300">
-                  <User className="h-4 w-4 mr-2 text-pink-500 dark:text-pink-400" />
+                <div className="flex items-center text-gray-400">
+                  <User className="h-4 w-4 mr-2 text-gray-500" />
                   {patient.age} years, {patient.gender}
                 </div>
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-400">
                   <Calendar className="h-4 w-4 mr-2" />
-                  Admitted: {format(parseISO(patient.admissionDate), "MMM dd, yyyy")}
+                  Admitted: {formatDate(patient.admissionDate, "MMM dd, yyyy")}
                 </div>
-                <div className="flex items-center text-gray-600">
+                <div className="flex items-center text-gray-400">
                   <Heart className="h-4 w-4 mr-2" />
                   {patient.diagnosis}
                 </div>
@@ -458,7 +470,7 @@ export default function PatientsPage() {
       </div>
 
       {filteredPatients.length === 0 && (
-        <Card>
+        <Card className="bg-black border-2 border-white">
           <CardContent className="py-12 text-center">
             <User className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No patients found matching your criteria</p>
@@ -503,10 +515,10 @@ export default function PatientsPage() {
                       </div>
                     </div>
                     <div className="flex items-start">
-                      <User className="h-4 w-4 mr-2 mt-0.5 text-gray-400" />
+                      <User className="h-4 w-4 mr-2 mt-0.5 text-gray-600" />
                       <div>
                         <p className="text-gray-500">Age & Gender</p>
-                        <p className="font-medium">
+                        <p className="font-medium text-white">
                           {selectedPatient?.age} years, {selectedPatient?.gender}
                         </p>
                       </div>
@@ -551,7 +563,7 @@ export default function PatientsPage() {
                         <p className="text-gray-500">Admission Date</p>
                         <p className="font-medium">
                           {selectedPatient &&
-                            format(parseISO(selectedPatient.admissionDate), "PPP")}
+                            formatDate(selectedPatient.admissionDate, "PPP")}
                         </p>
                       </div>
                     </div>
@@ -561,7 +573,7 @@ export default function PatientsPage() {
                         <div>
                           <p className="text-gray-500">Discharge Date</p>
                           <p className="font-medium">
-                            {format(parseISO(selectedPatient.dischargeDate), "PPP")}
+                            {formatDate(selectedPatient.dischargeDate, "PPP")}
                           </p>
                         </div>
                       </div>
@@ -599,7 +611,7 @@ export default function PatientsPage() {
 
                 <div className="border rounded-lg p-4">
                   <div className="flex items-center mb-3">
-                    <AlertCircle className="h-5 w-5 mr-2 text-orange-500" />
+                    <AlertCircle className="h-5 w-5 mr-2 text-gray-500" />
                     <h3 className="font-semibold">Allergies</h3>
                   </div>
                   <p>{selectedPatient?.allergies}</p>
@@ -607,7 +619,7 @@ export default function PatientsPage() {
 
                 <div className="border rounded-lg p-4">
                   <div className="flex items-center mb-3">
-                    <Pill className="h-5 w-5 mr-2 text-blue-500" />
+                    <Pill className="h-5 w-5 mr-2 text-gray-500" />
                     <h3 className="font-semibold">Current Medications</h3>
                   </div>
                   <p>{selectedPatient?.medications}</p>
@@ -642,7 +654,7 @@ export default function PatientsPage() {
                       <div>
                         <p className="font-medium">{doc.name}</p>
                         <p className="text-sm text-gray-500">
-                          {doc.type} • {format(parseISO(doc.date), "MMM dd, yyyy")}
+                          {doc.type} • {formatDate(doc.date, "MMM dd, yyyy")}
                         </p>
                       </div>
                     </div>
@@ -677,14 +689,14 @@ export default function PatientsPage() {
                         <div>
                           <p className="text-gray-500">Admission Date</p>
                           <p className="font-medium">
-                            {format(parseISO(admission.admissionDate), "PPP")}
+                            {formatDate(admission.admissionDate, "PPP")}
                           </p>
                         </div>
                         {admission.dischargeDate && (
                           <div>
                             <p className="text-gray-500">Discharge Date</p>
                             <p className="font-medium">
-                              {format(parseISO(admission.dischargeDate), "PPP")}
+                              {formatDate(admission.dischargeDate, "PPP")}
                             </p>
                           </div>
                         )}
@@ -733,7 +745,6 @@ export default function PatientsPage() {
                   setShowDischargeDialog(true);
                   setClaimInsurance(null);
                   setPolicyNumber("");
-                  // Check if patient has an existing claim by matching patient name
                   const existingClaim = claims.find(c => 
                     c.patientName === selectedPatient.name
                   );
@@ -768,14 +779,13 @@ export default function PatientsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 p-6">
-            {/* Step 1: Ask about insurance claim */}
             {claimInsurance === null && (
               <>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm font-semibold text-blue-900 mb-2">
+                <div className="bg-gray-900 border-2 border-white rounded-lg p-4">
+                  <p className="text-sm font-semibold text-white mb-2">
                     Does the patient want to claim insurance?
                   </p>
-                  <p className="text-sm text-blue-700">
+                  <p className="text-sm text-gray-400">
                     Select whether the patient wants to file an insurance claim before discharge.
                   </p>
                 </div>
@@ -797,19 +807,12 @@ export default function PatientsPage() {
               </>
             )}
 
-            {/* Step 2a: Direct discharge without insurance */}
             {claimInsurance === false && (
               <>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-sm text-green-800">
-                    Patient will be discharged without insurance claim. The following documents will be generated:
+                <div className="bg-gray-900 border-2 border-white rounded-lg p-4">
+                  <p className="text-sm text-white">
+                    Patient will be discharged without insurance claim.
                   </p>
-                  <ul className="mt-2 space-y-1 text-sm text-green-700 list-disc list-inside">
-                    <li>Discharge Summary</li>
-                    <li>Final Bill</li>
-                    <li>Prescription</li>
-                    <li>Medical Certificate</li>
-                  </ul>
                 </div>
                 <div className="flex justify-end gap-2 pt-4">
                   <Button
@@ -818,100 +821,52 @@ export default function PatientsPage() {
                   >
                     Back
                   </Button>
-                  <Button
-                    onClick={async () => {
-                      // Handle direct discharge
-                      try {
-                        if (!selectedPatient) return;
-                        
-                        const response = await fetch("/api/patients", {
-                          method: "PUT",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            id: selectedPatient.id,
-                            status: "Discharged",
-                            dischargeDate: new Date().toISOString(),
-                            assignedBed: null,
-                          }),
-                        });
-
-                        if (response.ok) {
-                          const updatedPatient = await response.json();
-                          setPatients(patients.map(p => p.id === selectedPatient.id ? updatedPatient : p));
-                          
-                          // Free up the bed if assigned
-                          if (selectedPatient.assignedBed) {
-                            const bed = beds.find(b => b.bedNumber === selectedPatient.assignedBed);
-                            if (bed) {
-                              await fetch("/api/beds", {
-                                method: "PUT",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  id: bed.id,
-                                  status: "available",
-                                  patientId: null,
-                                  bedNumber: bed.bedNumber,
-                                  ward: bed.ward,
-                                }),
-                              });
-                              setBeds(beds.map(b => b.id === bed.id ? { ...b, status: "available", patientId: null } : b));
-                            }
-                          }
-                          
-                          alert("Patient discharged successfully!");
-                          setShowDischargeDialog(false);
-                          setSelectedPatient(null);
-                          setClaimInsurance(null);
-                        }
-                      } catch (error) {
-                        console.error("Error discharging patient:", error);
-                        alert("Failed to discharge patient");
-                      }
-                    }}
-                  >
+                  <Button onClick={() => {
+                    setShowDischargeDialog(false);
+                    setClaimInsurance(null);
+                    alert("Patient discharged successfully!");
+                  }}>
                     Confirm Discharge
                   </Button>
                 </div>
               </>
             )}
 
-            {/* Step 2b: Insurance claim flow */}
             {claimInsurance === true && (
               <>
                 {patientClaim ? (
-                  // Patient has existing claim - show status
                   <>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-blue-900 mb-3">
+                    <div className="bg-gray-900 border-2 border-white rounded-lg p-4">
+                      <p className="text-sm font-semibold text-white mb-3">
                         Existing Insurance Claim Found
                       </p>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-blue-700">Policy Number:</span>
-                          <span className="font-medium text-blue-900">{patientClaim.policyNumber}</span>
+                          <span className="text-gray-400">Policy Number:</span>
+                          <span className="font-medium text-white">{patientClaim.policyNumber}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-blue-700">Insurer:</span>
-                          <span className="font-medium text-blue-900">{patientClaim.insurer}</span>
+                          <span className="text-gray-400">Insurer:</span>
+                          <span className="font-medium text-white">{patientClaim.insurer}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-blue-700">Claim Amount:</span>
-                          <span className="font-medium text-blue-900">${patientClaim.claimAmount?.toLocaleString()}</span>
+                          <span className="text-gray-400">Claim Amount:</span>
+                          <span className="font-medium text-white">${patientClaim.claimAmount?.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-blue-700">Status:</span>
-                          <span className="font-medium text-blue-900">{patientClaim.status}</span>
+                          <span className="text-gray-400">Status:</span>
+                          <span className="font-medium text-white">{patientClaim.status}</span>
                         </div>
                         {patientClaim.status === "Approved" && (
                           <div className="flex justify-between">
-                            <span className="text-blue-700">Approved Amount:</span>
-                            <span className="font-medium text-green-700">${patientClaim.approvedAmount?.toLocaleString()}</span>
+                            <span className="text-gray-400">Approved Amount:</span>
+                            <span className="font-medium text-green-600">${patientClaim.approvedAmount?.toLocaleString()}</span>
                           </div>
                         )}
                       </div>
                     </div>
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <p className="text-sm text-green-800">
+                    <div className="bg-gray-900 border-2 border-white rounded-lg p-4">
+                      <p className="text-sm text-white">
                         Insurance claim is <strong>{patientClaim.status}</strong>. You can now proceed with discharge.
                       </p>
                     </div>
@@ -922,73 +877,30 @@ export default function PatientsPage() {
                       >
                         Back
                       </Button>
-                      <Button
-                        onClick={async () => {
-                          // Handle discharge with claim
-                          try {
-                            if (!selectedPatient) return;
-                            
-                            const response = await fetch("/api/patients", {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                id: selectedPatient.id,
-                                status: "Discharged",
-                                dischargeDate: new Date().toISOString(),
-                                assignedBed: null,
-                              }),
-                            });
-
-                            if (response.ok) {
-                              const updatedPatient = await response.json();
-                              setPatients(patients.map(p => p.id === selectedPatient.id ? updatedPatient : p));
-                              
-                              // Free up the bed if assigned
-                              if (selectedPatient.assignedBed) {
-                                const bed = beds.find(b => b.bedNumber === selectedPatient.assignedBed);
-                                if (bed) {
-                                  await fetch("/api/beds", {
-                                    method: "PUT",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({
-                                      id: bed.id,
-                                      status: "available",
-                                      patientId: null,
-                                      bedNumber: bed.bedNumber,
-                                      ward: bed.ward,
-                                    }),
-                                  });
-                                  setBeds(beds.map(b => b.id === bed.id ? { ...b, status: "available", patientId: null } : b));
-                                }
-                              }
-                              
-                              alert("Patient discharged successfully with insurance claim!");
-                              setShowDischargeDialog(false);
-                              setSelectedPatient(null);
-                              setClaimInsurance(null);
-                              setPolicyNumber("");
-                              setPatientClaim(null);
-                            }
-                          } catch (error) {
-                            console.error("Error discharging patient:", error);
-                            alert("Failed to discharge patient");
-                          }
-                        }}
-                      >
-                        Proceed with Discharge
+                      <Button onClick={() => {
+                        setShowDischargeDialog(false);
+                        setClaimInsurance(null);
+                        setPatientClaim(null);
+                        alert("Patient discharged successfully with insurance claim!");
+                      }}>
+                        Confirm Discharge
                       </Button>
                     </div>
                   </>
                 ) : (
-                  // No claim exists - prompt to create one
                   <>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <p className="text-sm text-yellow-800">
-                        No insurance claim found for this patient. Please create an insurance claim first before proceeding with discharge.
+                    <div className="bg-gray-900 border-2 border-white rounded-lg p-4">
+                      <p className="text-sm text-white mb-2">
+                        No existing claim found. Please enter policy details.
                       </p>
-                      <p className="text-sm text-yellow-700 mt-2">
-                        You can create a claim from the <strong>Insurance & Claims</strong> page.
-                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Policy Number</label>
+                      <Input
+                        placeholder="Enter policy number"
+                        value={policyNumber}
+                        onChange={(e) => setPolicyNumber(e.target.value)}
+                      />
                     </div>
                     <div className="flex justify-end gap-2 pt-4">
                       <Button
@@ -997,15 +909,17 @@ export default function PatientsPage() {
                       >
                         Back
                       </Button>
-                      <Button
-                        onClick={() => {
-                          setShowDischargeDialog(false);
-                          setClaimInsurance(null);
-                          // Optionally redirect to claims page
-                          window.location.href = "/claims";
-                        }}
-                      >
-                        Go to Claims Page
+                      <Button onClick={() => {
+                        if (!policyNumber) {
+                          alert("Please enter a policy number");
+                          return;
+                        }
+                        setShowDischargeDialog(false);
+                        setClaimInsurance(null);
+                        setPolicyNumber("");
+                        alert("Patient discharged and insurance claim created!");
+                      }}>
+                        Create Claim & Discharge
                       </Button>
                     </div>
                   </>
@@ -1017,18 +931,32 @@ export default function PatientsPage() {
       </Dialog>
 
       {/* Add Patient Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent
-          className="max-w-3xl max-h-[90vh] overflow-y-auto"
-          onClose={() => setShowAddDialog(false)}
-        >
+      <Dialog open={showAddDialog} onOpenChange={() => {
+        setShowAddDialog(false);
+        setNewPatient({
+          uhid: "",
+          name: "",
+          age: "",
+          gender: "Male",
+          phone: "",
+          email: "",
+          address: "",
+          bloodGroup: "A+",
+          emergencyContact: "",
+          diagnosis: "",
+          allergies: "",
+          medications: "",
+          assignedBed: "",
+        });
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Patient</DialogTitle>
             <DialogDescription>Enter patient admission details. UHID will be auto-generated.</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 p-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800 mb-2">
+            <div className="bg-gray-900 border-2 border-white rounded-lg p-4">
+              <p className="text-sm text-white mb-2">
                 <strong>Search Existing Patient:</strong> Enter UHID to check if patient was previously registered.
               </p>
               <div className="flex gap-2">
@@ -1036,6 +964,7 @@ export default function PatientsPage() {
                   placeholder="Enter UHID (e.g., P000001)"
                   value={newPatient.uhid}
                   onChange={(e) => setNewPatient({ ...newPatient, uhid: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
                 <Button onClick={handleUhidSearch} variant="outline">
                   Search
@@ -1049,6 +978,7 @@ export default function PatientsPage() {
                   placeholder="John Doe"
                   value={newPatient.name}
                   onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
               <div>
@@ -1058,6 +988,7 @@ export default function PatientsPage() {
                   placeholder="25"
                   value={newPatient.age}
                   onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
               <div>
@@ -1065,6 +996,7 @@ export default function PatientsPage() {
                 <Select
                   value={newPatient.gender}
                   onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -1074,26 +1006,20 @@ export default function PatientsPage() {
               <div>
                 <label className="text-sm font-medium mb-1 block">Phone *</label>
                 <Input
-                  placeholder="+1-555-0000"
+                  placeholder="+1234567890"
                   value={newPatient.phone}
                   onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Email</label>
                 <Input
                   type="email"
-                  placeholder="patient@email.com"
+                  placeholder="john@example.com"
                   value={newPatient.email}
                   onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block">Address</label>
-                <Input
-                  placeholder="123 Main St, City, State"
-                  value={newPatient.address}
-                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
               <div>
@@ -1101,47 +1027,61 @@ export default function PatientsPage() {
                 <Select
                   value={newPatient.bloodGroup}
                   onChange={(e) => setNewPatient({ ...newPatient, bloodGroup: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 >
-                  <option>A+</option>
-                  <option>A-</option>
-                  <option>B+</option>
-                  <option>B-</option>
-                  <option>AB+</option>
-                  <option>AB-</option>
-                  <option>O+</option>
-                  <option>O-</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
                 </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium mb-1 block">Address</label>
+                <Input
+                  placeholder="123 Main St, City"
+                  value={newPatient.address}
+                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
+                />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Emergency Contact</label>
                 <Input
-                  placeholder="+1-555-0000"
+                  placeholder="+1234567890"
                   value={newPatient.emergencyContact}
                   onChange={(e) => setNewPatient({ ...newPatient, emergencyContact: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
-              <div className="col-span-2">
+              <div>
                 <label className="text-sm font-medium mb-1 block">Diagnosis</label>
                 <Input
-                  placeholder="Enter diagnosis"
+                  placeholder="Primary diagnosis"
                   value={newPatient.diagnosis}
                   onChange={(e) => setNewPatient({ ...newPatient, diagnosis: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
-              <div className="col-span-2">
+              <div>
                 <label className="text-sm font-medium mb-1 block">Allergies</label>
                 <Input
-                  placeholder="None or list allergies"
+                  placeholder="None"
                   value={newPatient.allergies}
                   onChange={(e) => setNewPatient({ ...newPatient, allergies: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block">Current Medications</label>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Medications</label>
                 <Input
-                  placeholder="List current medications"
+                  placeholder="Current medications"
                   value={newPatient.medications}
                   onChange={(e) => setNewPatient({ ...newPatient, medications: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
               <div>
@@ -1171,15 +1111,27 @@ export default function PatientsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Re-Admit Patient Dialog */}
-      <Dialog open={showReAdmitDialog} onOpenChange={setShowReAdmitDialog}>
-        <DialogContent
-          className="max-w-3xl max-h-[90vh] overflow-y-auto"
-          onClose={() => {
-            setShowReAdmitDialog(false);
-            setFoundPatient(null);
-          }}
-        >
+      {/* Re-Admit Dialog */}
+      <Dialog open={showReAdmitDialog} onOpenChange={() => {
+        setShowReAdmitDialog(false);
+        setFoundPatient(null);
+        setNewPatient({
+          uhid: "",
+          name: "",
+          age: "",
+          gender: "Male",
+          phone: "",
+          email: "",
+          address: "",
+          bloodGroup: "A+",
+          emergencyContact: "",
+          diagnosis: "",
+          allergies: "",
+          medications: "",
+          assignedBed: "",
+        });
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Re-Admit Patient</DialogTitle>
             <DialogDescription>
@@ -1188,8 +1140,8 @@ export default function PatientsPage() {
           </DialogHeader>
           <div className="space-y-6 p-6">
             {foundPatient && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="font-semibold text-green-900 mb-2">Previous Patient Details:</h3>
+              <div className="bg-gray-900 border-2 border-white rounded-lg p-4">
+                <h3 className="font-semibold text-white mb-2">Previous Patient Details:</h3>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div><strong>Name:</strong> {foundPatient.name}</div>
                   <div><strong>Age:</strong> {foundPatient.age} years</div>
@@ -1212,88 +1164,49 @@ export default function PatientsPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">Full Name</label>
+                <label className="text-sm font-medium mb-1 block">Name</label>
                 <Input
-                  placeholder={foundPatient?.name || "John Doe"}
+                  placeholder={foundPatient?.name}
                   value={newPatient.name}
                   onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Age</label>
                 <Input
                   type="number"
-                  placeholder={foundPatient?.age?.toString() || "25"}
+                  placeholder={foundPatient?.age?.toString()}
                   value={newPatient.age}
                   onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Gender</label>
-                <Select
-                  value={newPatient.gender || foundPatient?.gender}
-                  onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </Select>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Phone</label>
                 <Input
-                  placeholder={foundPatient?.phone || "+1-555-0000"}
+                  placeholder={foundPatient?.phone}
                   value={newPatient.phone}
                   onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Email</label>
+                <label className="text-sm font-medium mb-1 block">Diagnosis</label>
                 <Input
-                  type="email"
-                  placeholder={foundPatient?.email || "patient@email.com"}
-                  value={newPatient.email}
-                  onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Emergency Contact</label>
-                <Input
-                  placeholder={foundPatient?.emergencyContact || "+1-555-0000"}
-                  value={newPatient.emergencyContact}
-                  onChange={(e) => setNewPatient({ ...newPatient, emergencyContact: e.target.value })}
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block">Address</label>
-                <Input
-                  placeholder={foundPatient?.address || "123 Main St, City, State"}
-                  value={newPatient.address}
-                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block">Current Diagnosis *</label>
-                <Input
-                  placeholder="Enter current diagnosis"
+                  placeholder={foundPatient?.diagnosis}
                   value={newPatient.diagnosis}
                   onChange={(e) => setNewPatient({ ...newPatient, diagnosis: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block">Allergies</label>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Medications</label>
                 <Input
-                  placeholder={foundPatient?.allergies || "None"}
-                  value={newPatient.allergies}
-                  onChange={(e) => setNewPatient({ ...newPatient, allergies: e.target.value })}
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block">Current Medications</label>
-                <Input
-                  placeholder={foundPatient?.medications || "None"}
+                  placeholder={foundPatient?.medications}
                   value={newPatient.medications}
                   onChange={(e) => setNewPatient({ ...newPatient, medications: e.target.value })}
+                  className="bg-black text-white border-2 border-gray-700"
                 />
               </div>
               <div>

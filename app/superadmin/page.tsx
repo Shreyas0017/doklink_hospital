@@ -136,13 +136,13 @@ export default function SuperAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6">
+    <div className="min-h-screen bg-white p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold text-black">
             Super Admin Dashboard
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 mt-2">
             Manage hospitals and their administrators
           </p>
         </div>
@@ -162,57 +162,61 @@ export default function SuperAdminPage() {
         <div className="mb-6">
           <Button
             onClick={() => setShowCreateHospital(!showCreateHospital)}
-            className="bg-cyan-600 hover:bg-cyan-700"
+            className="bg-black hover:bg-gray-800 text-white"
           >
             {showCreateHospital ? "Cancel" : "+ Create New Hospital"}
           </Button>
         </div>
 
         {showCreateHospital && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Create New Hospital</CardTitle>
+          <Card className="mb-6 bg-white border-2 border-black shadow-lg">
+            <CardHeader className="bg-black text-white">
+              <CardTitle className="text-white">Create New Hospital</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateHospital} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Hospital Name *</label>
+                    <label className="text-sm font-medium text-black">Hospital Name *</label>
                     <Input
                       placeholder="City General Hospital"
                       value={hospitalName}
                       onChange={(e) => setHospitalName(e.target.value)}
+                      className="border-2 border-gray-200 focus:border-black"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Hospital Email *</label>
+                    <label className="text-sm font-medium text-black">Hospital Email *</label>
                     <Input
                       type="email"
                       placeholder="contact@hospital.com"
                       value={hospitalEmail}
                       onChange={(e) => setHospitalEmail(e.target.value.toLowerCase())}
+                      className="border-2 border-gray-200 focus:border-black"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Hospital Phone *</label>
+                    <label className="text-sm font-medium text-black">Hospital Phone *</label>
                     <Input
                       placeholder="+1-234-567-8900"
                       value={hospitalPhone}
                       onChange={(e) => setHospitalPhone(e.target.value)}
+                      className="border-2 border-gray-200 focus:border-black"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Address *</label>
+                    <label className="text-sm font-medium text-black">Address *</label>
                     <Input
                       placeholder="123 Medical Center Dr"
                       value={hospitalAddress}
                       onChange={(e) => setHospitalAddress(e.target.value)}
+                      className="border-2 border-gray-200 focus:border-black"
                       required
                     />
                   </div>
@@ -223,39 +227,42 @@ export default function SuperAdminPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Admin Name *</label>
+                    <label className="text-sm font-medium text-black">Admin Name *</label>
                     <Input
                       placeholder="Dr. John Smith"
                       value={adminName}
                       onChange={(e) => setAdminName(e.target.value)}
+                      className="border-2 border-gray-200 focus:border-black"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Admin Email *</label>
+                    <label className="text-sm font-medium text-black">Admin Email *</label>
                     <Input
                       type="email"
                       placeholder="admin@hospital.com"
                       value={adminEmail}
                       onChange={(e) => setAdminEmail(e.target.value.toLowerCase())}
+                      className="border-2 border-gray-200 focus:border-black"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Admin Phone</label>
+                    <label className="text-sm font-medium text-black">Admin Phone</label>
                     <Input
                       placeholder="+1-234-567-8900"
                       value={adminPhone}
                       onChange={(e) => setAdminPhone(e.target.value)}
+                      className="border-2 border-gray-200 focus:border-black"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Admin Role *</label>
+                    <label className="text-sm font-medium text-black">Admin Role *</label>
                     <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-10 w-full rounded-md border-2 border-gray-200 bg-white px-3 py-2 text-sm focus:border-black focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                       value={adminRole}
                       onChange={(e) =>
                         setAdminRole(e.target.value as "HospitalAdmin" | "BasicUser")
@@ -267,12 +274,13 @@ export default function SuperAdminPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Password * (Min 6 chars)</label>
+                    <label className="text-sm font-medium text-black">Password * (Min 6 chars)</label>
                     <Input
                       type="password"
                       placeholder="••••••••"
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
+                      className="border-2 border-gray-200 focus:border-black"
                       required
                     />
                   </div>
@@ -281,7 +289,7 @@ export default function SuperAdminPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-cyan-600 hover:bg-cyan-700"
+                  className="w-full bg-black hover:bg-gray-800 text-white"
                 >
                   {loading ? "Creating..." : "Create Hospital & Admin"}
                 </Button>
@@ -290,9 +298,9 @@ export default function SuperAdminPage() {
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>All Hospitals ({hospitals.length})</CardTitle>
+        <Card className="bg-white border-2 border-black shadow-lg">
+          <CardHeader className="bg-black text-white">
+            <CardTitle className="text-white">All Hospitals ({hospitals.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -304,38 +312,38 @@ export default function SuperAdminPage() {
                 hospitals.map((hospital) => (
                   <div
                     key={hospital.id}
-                    className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition"
+                    className="border-2 border-black rounded-lg p-4 hover:bg-gray-50 bg-white transition"
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{hospital.name}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <h3 className="font-semibold text-lg text-black">{hospital.name}</h3>
+                        <p className="text-sm text-gray-600">
                           Code: {hospital.code}
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-600">
                           Email: {hospital.email}
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-600">
                           Phone: {hospital.phone}
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-600">
                           Address: {hospital.address}
                         </p>
                         
                         {hospital.stats && (
                           <div className="mt-3 flex gap-4">
-                            <div className="bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded">
-                              <span className="text-xs font-medium text-blue-800 dark:text-blue-200">
+                            <div className="bg-gray-100 border border-black px-3 py-1 rounded">
+                              <span className="text-xs font-medium text-black">
                                 🛏️ {hospital.stats.beds} Beds
                               </span>
                             </div>
-                            <div className="bg-green-100 dark:bg-green-900 px-3 py-1 rounded">
-                              <span className="text-xs font-medium text-green-800 dark:text-green-200">
+                            <div className="bg-gray-100 border border-black px-3 py-1 rounded">
+                              <span className="text-xs font-medium text-black">
                                 👥 {hospital.stats.patients} Patients
                               </span>
                             </div>
-                            <div className="bg-purple-100 dark:bg-purple-900 px-3 py-1 rounded">
-                              <span className="text-xs font-medium text-purple-800 dark:text-purple-200">
+                            <div className="bg-gray-100 border border-black px-3 py-1 rounded">
+                              <span className="text-xs font-medium text-black">
                                 📋 {hospital.stats.claims} Claims
                               </span>
                             </div>

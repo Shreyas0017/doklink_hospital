@@ -182,12 +182,12 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="min-h-screen bg-black p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold text-white">
           User Management
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
+        <p className="text-gray-600 mt-2">
           {session.user.role === "HospitalAdmin"
             ? "Manage staff accounts for your hospital"
             : "Manage all users across hospitals"}
@@ -209,43 +209,45 @@ export default function UsersPage() {
       <div className="mb-6">
         <Button
           onClick={() => setShowCreateUser(!showCreateUser)}
-          className="bg-cyan-600 hover:bg-cyan-700"
+          className="bg-white hover:bg-gray-200 text-black"
         >
           {showCreateUser ? "Cancel" : "+ Add New User"}
         </Button>
       </div>
 
       {showCreateUser && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Create New User</CardTitle>
+        <Card className="mb-6 bg-black border-2 border-white shadow-lg">
+          <CardHeader className="bg-black text-white">
+            <CardTitle className="text-white">Create New User</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name *</label>
+                  <label className="text-sm font-medium text-white">Full Name *</label>
                   <Input
                     placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    className="bg-black text-white border-2 border-gray-700 focus:border-white"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Email *</label>
+                  <label className="text-sm font-medium text-white">Email *</label>
                   <Input
                     type="email"
                     placeholder="john@hospital.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value.toLowerCase())}
+                    className="bg-black text-white border-2 border-gray-700 focus:border-white"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
+                  <label className="text-sm font-medium text-white">
                     Password * (Min 6 chars)
                   </label>
                   <Input
@@ -253,25 +255,28 @@ export default function UsersPage() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="bg-black text-white border-2 border-gray-700 focus:border-white"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone</label>
+                  <label className="text-sm font-medium text-white">Phone</label>
                   <Input
                     placeholder="+1-234-567-8900"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    className="bg-black text-white border-2 border-gray-700 focus:border-white"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Department</label>
+                  <label className="text-sm font-medium text-white">Department</label>
                   <Input
                     placeholder="Emergency, ICU, etc."
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
+                    className="bg-black text-white border-2 border-gray-700 focus:border-white"
                   />
                 </div>
 
@@ -279,11 +284,11 @@ export default function UsersPage() {
                 {session?.user?.role === "SuperAdmin" && (
                   <>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Hospital *</label>
+                      <label className="text-sm font-medium text-white">Hospital *</label>
                       <select
                         value={selectedHospitalId}
                         onChange={(e) => setSelectedHospitalId(e.target.value)}
-                        className="w-full p-2 border rounded dark:bg-slate-800 dark:border-gray-600"
+                        className="w-full p-2 border-2 border-gray-700 rounded focus:border-white bg-black text-white"
                         required
                       >
                         <option value="">Select Hospital</option>
@@ -296,11 +301,11 @@ export default function UsersPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Role *</label>
+                      <label className="text-sm font-medium text-white">Role *</label>
                       <select
                         value={selectedRole}
                         onChange={(e) => setSelectedRole(e.target.value as "HospitalAdmin" | "BasicUser")}
-                        className="w-full p-2 border rounded dark:bg-slate-800 dark:border-gray-600"
+                        className="w-full p-2 border-2 border-gray-700 rounded focus:border-white bg-black text-white"
                       >
                         <option value="BasicUser">Basic User</option>
                         <option value="HospitalAdmin">Hospital Admin</option>
@@ -311,14 +316,14 @@ export default function UsersPage() {
               </div>
 
               {session?.user?.role === "HospitalAdmin" && (
-                <div className="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                <div className="text-sm text-gray-400 bg-gray-900 p-3 rounded border border-gray-700">
                   <strong>Note:</strong> As a Hospital Admin, you can only create{" "}
                   <strong>Basic Users</strong> for your hospital.
                 </div>
               )}
 
               {session?.user?.role === "SuperAdmin" && (
-                <div className="text-sm text-gray-600 dark:text-gray-400 bg-purple-50 dark:bg-purple-900/20 p-3 rounded">
+                <div className="text-sm text-gray-400 bg-gray-900 p-3 rounded border border-gray-700">
                   <strong>Note:</strong> As a SuperAdmin, you can create users for any hospital with either{" "}
                   <strong>Hospital Admin</strong> or <strong>Basic User</strong> roles.
                 </div>
@@ -327,7 +332,7 @@ export default function UsersPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-cyan-600 hover:bg-cyan-700"
+                className="w-full bg-black hover:bg-gray-900 text-white"
               >
                 {loading ? "Creating..." : "Create User"}
               </Button>
@@ -336,56 +341,48 @@ export default function UsersPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Users ({users.length})</CardTitle>
+      <Card className="bg-black border-2 border-white shadow-lg">
+        <CardHeader className="bg-black text-white">
+          <CardTitle className="text-white">All Users ({users.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {users.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
+              <p className="text-gray-400 text-center py-8">
                 No users found. Create your first user above.
               </p>
             ) : (
               users.map((user) => (
                 <div
                   key={user.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-slate-800 transition"
+                  className="border-2 border-white rounded-lg p-4 hover:bg-gray-900 bg-black transition"
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-lg">{user.name}</h3>
-                        <Badge
-                          variant={
-                            user.role === "SuperAdmin"
-                              ? "destructive"
-                              : user.role === "HospitalAdmin"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
+                        <h3 className="font-semibold text-lg text-white">{user.name}</h3>
+                        <Badge className="bg-white text-black">
                           {user.role}
                         </Badge>
                         {!user.isActive && (
                           <Badge variant="outline">Inactive</Badge>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-sm text-gray-400 mb-1  ">
                         {user.email}
                       </p>
                       {user.phone && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-400 mb-1  ">
                           Phone: {user.phone}
                         </p>
                       )}
                       {user.department && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-400 mb-1  ">
                           Department: {user.department}
                         </p>
                       )}
                       {user.hospitalName && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-gray-400 mb-1  ">
                           Hospital: {user.hospitalName}
                         </p>
                       )}
