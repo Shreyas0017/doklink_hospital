@@ -17,7 +17,7 @@
 │  │  │  Logo  │  │  │  │                                             │   │ │
 │  │  └────────┘  │  │  │          PAGE CONTENT                       │   │ │
 │  │              │  │  │                                             │   │ │
-│  │  Dashboard   │  │  │  • Stats Cards                              │   │ │
+│  │  Dashboard   │  │   │  • Stats Cards                              │   │ │
 │  │  Beds        │  │  │  • Data Tables                              │   │ │
 │  │  Patients    │  │  │  • Visual Grids                             │   │ │
 │  │  Claims      │  │  │  • Charts                                   │   │ │
