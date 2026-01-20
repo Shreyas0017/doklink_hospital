@@ -14,8 +14,20 @@ export interface BaseDocument {
 
 export type Gender = "Male" | "Female" | "Other";
 
-export type BedStatus = "available" | "occupied" | "maintenance";
+export type BedStatus = "available" | "occupied" | "maintenance" | "reserved";
 
+export type RoomType =
+  | "General"
+  | "Semi-Private"
+  | "Deluxe Cabin"
+  | "Premium Cabin"
+  | "ICU Bed"
+  | "CCU Bed"
+  | "Suite Room";
+
+export type Floor = "Ground" | "1st" | "2nd" | "3rd" | "4th" | "5th";
+
+export type Wing = "A" | "B" | "C" | "D";
 export type Ward =
   | "General"
   | "ICU"
@@ -41,12 +53,24 @@ export type ActivityType = "admission" | "discharge" | "claim";
    BED
 ========================= */
 
+export interface BedEquipment {
+  hasMonitor: boolean;
+  hasOxygen: boolean;
+  hasVentilator: boolean;
+}
+
 export interface Bed extends BaseDocument {
   id?: string; // Add id for frontend use
   hospitalId: string; // Multi-tenant field (h1, h2, etc.)
   bedNumber: string;
-  ward: Ward;
+  roomType: RoomType;
+  department?: string; // Optional department field, defaults to "NA"
+  floor: Floor;
+  wing: Wing;
+  dailyRate: number; // in INR - Required
+  equipment: BedEquipment;
   status: BedStatus;
+  ward?: Ward; // Keeping for backward compatibility
   patientId?: string;
 }
 

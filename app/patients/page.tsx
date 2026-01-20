@@ -895,11 +895,12 @@ export default function PatientsPage() {
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Policy Number</label>
+                      <label className="text-sm font-medium mb-1 block text-white">Policy Number</label>
                       <Input
                         placeholder="Enter policy number"
                         value={policyNumber}
                         onChange={(e) => setPolicyNumber(e.target.value)}
+                        className="bg-black text-white border-2 border-gray-700"
                       />
                     </div>
                     <div className="flex justify-end gap-2 pt-4">
@@ -973,7 +974,7 @@ export default function PatientsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">Full Name *</label>
+                <label className="text-sm font-medium mb-1 block text-white">Full Name *</label>
                 <Input
                   placeholder="John Doe"
                   value={newPatient.name}
@@ -982,7 +983,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Age *</label>
+                <label className="text-sm font-medium mb-1 block text-white">Age *</label>
                 <Input
                   type="number"
                   placeholder="25"
@@ -992,7 +993,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Gender</label>
+                <label className="text-sm font-medium mb-1 block text-white">Gender</label>
                 <Select
                   value={newPatient.gender}
                   onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
@@ -1004,7 +1005,7 @@ export default function PatientsPage() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Phone *</label>
+                <label className="text-sm font-medium mb-1 block text-white">Phone *</label>
                 <Input
                   placeholder="+1234567890"
                   value={newPatient.phone}
@@ -1013,7 +1014,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Email</label>
+                <label className="text-sm font-medium mb-1 block text-white">Email</label>
                 <Input
                   type="email"
                   placeholder="john@example.com"
@@ -1023,7 +1024,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Blood Group</label>
+                <label className="text-sm font-medium mb-1 block text-white">Blood Group</label>
                 <Select
                   value={newPatient.bloodGroup}
                   onChange={(e) => setNewPatient({ ...newPatient, bloodGroup: e.target.value })}
@@ -1040,7 +1041,7 @@ export default function PatientsPage() {
                 </Select>
               </div>
               <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block">Address</label>
+                <label className="text-sm font-medium mb-1 block text-white">Address</label>
                 <Input
                   placeholder="123 Main St, City"
                   value={newPatient.address}
@@ -1049,7 +1050,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Emergency Contact</label>
+                <label className="text-sm font-medium mb-1 block text-white">Emergency Contact</label>
                 <Input
                   placeholder="+1234567890"
                   value={newPatient.emergencyContact}
@@ -1058,7 +1059,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Diagnosis</label>
+                <label className="text-sm font-medium mb-1 block text-white">Diagnosis</label>
                 <Input
                   placeholder="Primary diagnosis"
                   value={newPatient.diagnosis}
@@ -1067,7 +1068,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Allergies</label>
+                <label className="text-sm font-medium mb-1 block text-white">Allergies</label>
                 <Input
                   placeholder="None"
                   value={newPatient.allergies}
@@ -1076,7 +1077,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Medications</label>
+                <label className="text-sm font-medium mb-1 block text-white">Medications</label>
                 <Input
                   placeholder="Current medications"
                   value={newPatient.medications}
@@ -1085,7 +1086,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Assign Bed</label>
+                <label className="text-sm font-medium mb-1 block text-white">Assign Bed</label>
                 <Select
                   value={newPatient.assignedBed}
                   onChange={(e) => setNewPatient({ ...newPatient, assignedBed: e.target.value })}
@@ -1142,7 +1143,7 @@ export default function PatientsPage() {
             {foundPatient && (
               <div className="bg-gray-900 border-2 border-white rounded-lg p-4">
                 <h3 className="font-semibold text-white mb-2">Previous Patient Details:</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-2 gap-2 text-sm text-white">
                   <div><strong>Name:</strong> {foundPatient.name}</div>
                   <div><strong>Age:</strong> {foundPatient.age} years</div>
                   <div><strong>Gender:</strong> {foundPatient.gender}</div>
@@ -1158,13 +1159,13 @@ export default function PatientsPage() {
               </div>
             )}
 
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-400">
               You can update the information below or keep the existing details. Only fill in the fields you want to change.
             </p>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-1 block">Name</label>
+                <label className="text-sm font-medium mb-1 block text-white">Name</label>
                 <Input
                   placeholder={foundPatient?.name}
                   value={newPatient.name}
@@ -1173,7 +1174,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Age</label>
+                <label className="text-sm font-medium mb-1 block text-white">Age</label>
                 <Input
                   type="number"
                   placeholder={foundPatient?.age?.toString()}
@@ -1183,7 +1184,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Phone</label>
+                <label className="text-sm font-medium mb-1 block text-white">Phone</label>
                 <Input
                   placeholder={foundPatient?.phone}
                   value={newPatient.phone}
@@ -1192,7 +1193,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Diagnosis</label>
+                <label className="text-sm font-medium mb-1 block text-white">Diagnosis</label>
                 <Input
                   placeholder={foundPatient?.diagnosis}
                   value={newPatient.diagnosis}
@@ -1201,7 +1202,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Medications</label>
+                <label className="text-sm font-medium mb-1 block text-white">Medications</label>
                 <Input
                   placeholder={foundPatient?.medications}
                   value={newPatient.medications}
@@ -1210,7 +1211,7 @@ export default function PatientsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1 block">Assign Bed</label>
+                <label className="text-sm font-medium mb-1 block text-white">Assign Bed</label>
                 <Select
                   value={newPatient.assignedBed}
                   onChange={(e) => setNewPatient({ ...newPatient, assignedBed: e.target.value })}

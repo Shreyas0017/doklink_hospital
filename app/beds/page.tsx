@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,27 +15,70 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import { Bed, Ward, BedStatus } from "@/lib/types";
+import { Bed, BedStatus, RoomType, Floor, Wing } from "@/lib/types";
 import { Plus, Filter } from "lucide-react";
 
 export default function BedManagementPage() {
   const [beds, setBeds] = useState<Bed[]>([]);
   const [patients, setPatients] = useState([]);
-  const [selectedWard, setSelectedWard] = useState<Ward | "All">("All");
+  const [selectedRoomType, setSelectedRoomType] = useState<RoomType | "All">("All");
   const [selectedStatus, setSelectedStatus] = useState<BedStatus | "All">("All");
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedPatientForBed, setSelectedPatientForBed] = useState("");
-  const [newBed, setNewBed] = useState({ bedNumber: "", ward: "General" as Ward });
+  const [customRoomTypes, setCustomRoomTypes] = useState<string[]>([]);
+  const [customDepartments, setCustomDepartments] = useState<string[]>(["NA"]);
+  const [customFloors, setCustomFloors] = useState<string[]>([]);
+  const [customWings, setCustomWings] = useState<string[]>(["NA"]);
+  const [showRoomTypeInput, setShowRoomTypeInput] = useState(false);
+  const [showDepartmentInput, setShowDepartmentInput] = useState(false);
+  const [showFloorInput, setShowFloorInput] = useState(false);
+  const [showWingInput, setShowWingInput] = useState(false);
+  const [newRoomTypeValue, setNewRoomTypeValue] = useState("");
+  const [newDepartmentValue, setNewDepartmentValue] = useState("");
+  const [newFloorValue, setNewFloorValue] = useState("");
+  const [newWingValue, setNewWingValue] = useState("");
+  const [newBed, setNewBed] = useState({ 
+    bedNumber: "", 
+    roomType: "" as RoomType,
+    department: "",
+    floor: "" as Floor,
+    wing: "" as Wing,
+    dailyRate: 0,
+    equipment: {
+      hasMonitor: false,
+      hasOxygen: false,
+      hasVentilator: false
+    }
+  });
   const [loading, setLoading] = useState(true);
+
+  // Load custom options from MongoDB on mount
+  useEffect(() => {
+    async function loadBedConfig() {
+      try {
+        const response = await fetch("/api/bed-config");
+        if (response.ok) {
+          const config = await response.json();
+          setCustomRoomTypes(config.roomTypes || []);
+          setCustomDepartments(config.departments || ["NA"]);
+          setCustomFloors(config.floors || []);
+          setCustomWings(config.wings || ["NA"]);
+        }
+      } catch (error) {
+        console.error("Failed to load bed config:", error);
+      }
+    }
+    loadBedConfig();
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
       try {
         const [bedsRes, patientsRes] = await Promise.all([
-          fetch("/api/beds"),
-          fetch("/api/patients"),
+          fetch("/api/beds", { cache: 'no-store' }),
+          fetch("/api/patients", { cache: 'no-store' }),
         ]);
         
         const bedsData = await bedsRes.json();
@@ -55,8 +99,8 @@ export default function BedManagementPage() {
 
   const handleAddBed = async () => {
     try {
-      if (!newBed.bedNumber || !newBed.ward) {
-        alert("Please fill in all required fields");
+      if (!newBed.bedNumber || !newBed.roomType || !newBed.floor || !newBed.wing || !newBed.dailyRate) {
+        alert("Please fill in all required fields (Bed Number, Room Type, Floor, Wing, Daily Rate)");
         return;
       }
 
@@ -67,7 +111,12 @@ export default function BedManagementPage() {
 
       const bedData = {
         bedNumber: newBed.bedNumber,
-        ward: newBed.ward,
+        roomType: newBed.roomType,
+        department: newBed.department || "NA",
+        floor: newBed.floor,
+        wing: newBed.wing,
+        dailyRate: newBed.dailyRate,
+        equipment: newBed.equipment,
         status: "available" as BedStatus,
       };
 
@@ -84,7 +133,19 @@ export default function BedManagementPage() {
 
       const addedBed = await response.json();
       setBeds([...beds, addedBed]);
-      setNewBed({ bedNumber: "", ward: "General" });
+      setNewBed({ 
+        bedNumber: "", 
+        roomType: "" as RoomType,
+        department: "",
+        floor: "" as Floor,
+        wing: "" as Wing,
+        dailyRate: 0,
+        equipment: {
+          hasMonitor: false,
+          hasOxygen: false,
+          hasVentilator: false
+        }
+      });
       setShowAddDialog(false);
       alert("Bed added successfully!");
     } catch (error) {
@@ -114,7 +175,12 @@ export default function BedManagementPage() {
           status: "occupied",
           patientId: selectedPatientForBed,
           bedNumber: selectedBed.bedNumber,
-          ward: selectedBed.ward,
+          roomType: selectedBed.roomType,
+          department: selectedBed.department || "NA",
+          floor: selectedBed.floor,
+          wing: selectedBed.wing,
+          dailyRate: selectedBed.dailyRate,
+          equipment: selectedBed.equipment,
         }),
       });
 
@@ -170,7 +236,12 @@ export default function BedManagementPage() {
           status: "available",
           patientId: null,
           bedNumber: selectedBed.bedNumber,
-          ward: selectedBed.ward,
+          roomType: selectedBed.roomType,
+          department: selectedBed.department || "NA",
+          floor: selectedBed.floor,
+          wing: selectedBed.wing,
+          dailyRate: selectedBed.dailyRate,
+          equipment: selectedBed.equipment,
         }),
       });
 
@@ -209,12 +280,111 @@ export default function BedManagementPage() {
     }
   };
 
+  const handleSaveRoomType = async () => {
+    if (newRoomTypeValue && newRoomTypeValue.trim()) {
+      try {
+        const response = await fetch("/api/bed-config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field: "roomTypes", value: newRoomTypeValue.trim() }),
+        });
+        if (response.ok) {
+          const config = await response.json();
+          setCustomRoomTypes(config.roomTypes);
+          setNewBed({ ...newBed, roomType: newRoomTypeValue.trim() as RoomType });
+          setNewRoomTypeValue("");
+          setShowRoomTypeInput(false);
+        }
+      } catch (error) {
+        console.error("Failed to save room type:", error);
+      }
+    }
+  };
+
+  const handleSaveDepartment = async () => {
+    if (newDepartmentValue && newDepartmentValue.trim()) {
+      try {
+        const response = await fetch("/api/bed-config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field: "departments", value: newDepartmentValue.trim() }),
+        });
+        if (response.ok) {
+          const config = await response.json();
+          setCustomDepartments(config.departments);
+          setNewBed({ ...newBed, department: newDepartmentValue.trim() });
+          setNewDepartmentValue("");
+          setShowDepartmentInput(false);
+        }
+      } catch (error) {
+        console.error("Failed to save department:", error);
+      }
+    }
+  };
+
+  const handleSaveFloor = async () => {
+    if (newFloorValue && newFloorValue.trim()) {
+      try {
+        const response = await fetch("/api/bed-config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field: "floors", value: newFloorValue.trim() }),
+        });
+        if (response.ok) {
+          const config = await response.json();
+          setCustomFloors(config.floors);
+          setNewBed({ ...newBed, floor: newFloorValue.trim() as Floor });
+          setNewFloorValue("");
+          setShowFloorInput(false);
+        }
+      } catch (error) {
+        console.error("Failed to save floor:", error);
+      }
+    }
+  };
+
+  const handleSaveWing = async () => {
+    if (newWingValue && newWingValue.trim()) {
+      try {
+        const response = await fetch("/api/bed-config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ field: "wings", value: newWingValue.trim() }),
+        });
+        if (response.ok) {
+          const config = await response.json();
+          setCustomWings(config.wings);
+          setNewBed({ ...newBed, wing: newWingValue.trim() as Wing });
+          setNewWingValue("");
+          setShowWingInput(false);
+        }
+      } catch (error) {
+        console.error("Failed to save wing:", error);
+      }
+    }
+  };
+
+  // Dynamically generate room type stats - will automatically include new room types
+  const roomTypeStats = React.useMemo(() => {
+    const stats: { [key: string]: Bed[] } = {};
+    
+    // Get all unique room types from beds
+    const uniqueRoomTypes = [...new Set(beds.map(b => b.roomType))].filter(Boolean);
+    
+    // Generate stats for each room type
+    uniqueRoomTypes.forEach(roomType => {
+      stats[roomType] = beds.filter((b) => b.roomType === roomType);
+    });
+    
+    return stats;
+  }, [beds]);
+
   if (loading) return <div className="p-8 text-white">Loading...</div>;
 
   const filteredBeds = beds.filter((bed) => {
-    const wardMatch = selectedWard === "All" || bed.ward === selectedWard;
+    const roomTypeMatch = selectedRoomType === "All" || bed.roomType === selectedRoomType;
     const statusMatch = selectedStatus === "All" || bed.status === selectedStatus;
-    return wardMatch && statusMatch;
+    return roomTypeMatch && statusMatch;
   });
 
   const getPatientForBed = (bedId: string) => {
@@ -242,15 +412,9 @@ export default function BedManagementPage() {
         return <Badge className="bg-gray-700 text-white">Occupied</Badge>;
       case "maintenance":
         return <Badge className="bg-gray-500 text-white">Maintenance</Badge>;
+      case "reserved":
+        return <Badge className="bg-yellow-600 text-white">Reserved</Badge>;
     }
-  };
-
-  const wardStats = {
-    General: beds.filter((b) => b.ward === "General"),
-    ICU: beds.filter((b) => b.ward === "ICU"),
-    Pediatric: beds.filter((b) => b.ward === "Pediatric"),
-    Maternity: beds.filter((b) => b.ward === "Maternity"),
-    Emergency: beds.filter((b) => b.ward === "Emergency"),
   };
 
   return (
@@ -266,15 +430,15 @@ export default function BedManagementPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-        {Object.entries(wardStats).map(([ward, wardBeds]) => {
-          const occupied = wardBeds.filter((b) => b.status === "occupied").length;
-          const total = wardBeds.length;
+      {/* Stats Cards - Dynamically shows all room types */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {Object.entries(roomTypeStats).map(([roomType, roomTypeBeds]) => {
+          const occupied = roomTypeBeds.filter((b) => b.status === "occupied").length;
+          const total = roomTypeBeds.length;
           return (
-            <Card key={ward} className="bg-black border-2 border-white shadow-lg hover:shadow-xl transition-shadow group">
+            <Card key={roomType} className="bg-black border-2 border-white shadow-lg hover:shadow-xl transition-shadow group">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-full text-center group-hover:bg-white group-hover:text-black transition-colors">{ward}</CardTitle>
+                <CardTitle className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-full text-center group-hover:bg-white group-hover:text-black transition-colors">{roomType}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-black text-white">
@@ -294,23 +458,21 @@ export default function BedManagementPage() {
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
             <Filter className="h-5 w-5 text-white" />
-            <div className="flex-1 flex gap-4">
-              <div className="flex-1">
-                <label className="text-sm font-medium mb-1 block text-white">Ward</label>
+            <div className="flex-1 grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block text-white">Room Type</label>
                 <Select
-                  value={selectedWard}
-                  onChange={(e) => setSelectedWard(e.target.value as Ward | "All")}
+                  value={selectedRoomType}
+                  onChange={(e) => setSelectedRoomType(e.target.value as RoomType | "All")}
                   className="border-2 border-white/20 focus:border-white bg-black text-white"
                 >
-                  <option value="All">All Wards</option>
-                  <option value="General">General</option>
-                  <option value="ICU">ICU</option>
-                  <option value="Pediatric">Pediatric</option>
-                  <option value="Maternity">Maternity</option>
-                  <option value="Emergency">Emergency</option>
+                  <option value="All">All Room Types</option>
+                  {customRoomTypes.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
                 </Select>
               </div>
-              <div className="flex-1">
+              <div>
                 <label className="text-sm font-medium mb-1 block text-white">Status</label>
                 <Select
                   value={selectedStatus}
@@ -321,6 +483,7 @@ export default function BedManagementPage() {
                   <option value="available">Available</option>
                   <option value="occupied">Occupied</option>
                   <option value="maintenance">Maintenance</option>
+                  <option value="reserved">Reserved</option>
                 </Select>
               </div>
             </div>
@@ -336,7 +499,7 @@ export default function BedManagementPage() {
         <CardContent className="pt-6 bg-black">
           {filteredBeds.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-400">No beds found. Click "Add New Bed" to create one.</p>
+              <p className="text-gray-400">No beds found. Click &quot;Add New Bed&quot; to create one.</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
@@ -349,6 +512,7 @@ export default function BedManagementPage() {
                     ${bed.status === "available" ? "border-white bg-black text-white" : ""}
                     ${bed.status === "occupied" ? "border-white bg-gray-700 text-white" : ""}
                     ${bed.status === "maintenance" ? "border-gray-400 bg-gray-500 text-white" : ""}
+                    ${bed.status === "reserved" ? "border-yellow-400 bg-yellow-700 text-white" : ""}
                   `}
                 >
                   <div className="flex flex-col items-center text-center">
@@ -356,7 +520,7 @@ export default function BedManagementPage() {
                       className={`w-3 h-3 rounded-full mb-2 ${getBedStatusColor(bed.status)} border border-current`}
                     />
                     <div className="font-bold text-sm">{bed.bedNumber}</div>
-                    <div className="text-xs opacity-70 mt-1">{bed.ward}</div>
+                    <div className="text-xs opacity-70 mt-1">{bed.roomType}</div>
                     {bed.status === "occupied" && bed.patientId && (
                       <div className="text-xs opacity-70 mt-1">
                         {patients.find((p) => p.id === bed.patientId)?.name.split(" ")[0]}
@@ -375,12 +539,71 @@ export default function BedManagementPage() {
         <DialogContent className="max-w-2xl bg-black border-2 border-white text-white" onClose={() => setSelectedBed(null)}>
           <DialogHeader>
             <DialogTitle className="text-white">Bed Details - {selectedBed?.bedNumber}</DialogTitle>
-            <DialogDescription className="text-gray-400">{selectedBed?.ward} Ward</DialogDescription>
+            <DialogDescription className="text-gray-400">
+              {selectedBed?.roomType}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 p-6">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white">Status:</span>
-              {selectedBed && getBedStatusBadge(selectedBed.status)}
+            {/* Bed Information */}
+            <div className="border-2 border-white rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold text-lg text-white">Bed Information</h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-400">Bed Number:</span>
+                  <p className="font-medium text-white">{selectedBed?.bedNumber}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Room Type:</span>
+                  <p className="font-medium text-white">{selectedBed?.roomType}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Department:</span>
+                  <p className="font-medium text-white">{selectedBed?.department || "NA"}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Status:</span>
+                  {selectedBed && getBedStatusBadge(selectedBed.status)}
+                </div>
+                {selectedBed?.floor && (
+                  <div>
+                    <span className="text-gray-400">Floor:</span>
+                    <p className="font-medium text-white">{selectedBed.floor}</p>
+                  </div>
+                )}
+                {selectedBed?.wing && (
+                  <div>
+                    <span className="text-gray-400">Wing:</span>
+                    <p className="font-medium text-white">{selectedBed.wing}</p>
+                  </div>
+                )}
+                {selectedBed?.dailyRate && (
+                  <div className="col-span-2">
+                    <span className="text-gray-400">Daily Rate:</span>
+                    <p className="font-medium text-white">₹{selectedBed.dailyRate.toLocaleString('en-IN')}</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Equipment */}
+              {selectedBed?.equipment && (
+                <div className="mt-4 pt-4 border-t-2 border-white/20">
+                  <h4 className="font-semibold text-white mb-2">Equipment Available:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedBed.equipment.hasMonitor && (
+                      <Badge className="bg-blue-600 text-white">Monitor</Badge>
+                    )}
+                    {selectedBed.equipment.hasOxygen && (
+                      <Badge className="bg-green-600 text-white">Oxygen</Badge>
+                    )}
+                    {selectedBed.equipment.hasVentilator && (
+                      <Badge className="bg-red-600 text-white">Ventilator</Badge>
+                    )}
+                    {!selectedBed.equipment.hasMonitor && !selectedBed.equipment.hasOxygen && !selectedBed.equipment.hasVentilator && (
+                      <span className="text-gray-400 text-sm">No special equipment</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {selectedBed?.status === "occupied" && selectedBed.patientId && (
@@ -457,36 +680,214 @@ export default function BedManagementPage() {
 
       {/* Add Bed Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent onClose={() => setShowAddDialog(false)} className="bg-black border-2 border-white text-white">
+        <DialogContent onClose={() => setShowAddDialog(false)} className="max-w-3xl bg-black border-2 border-white text-white max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">Add New Bed</DialogTitle>
             <DialogDescription className="text-gray-400">Create a new bed in the system</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 p-6">
-            <div>
-              <label className="text-sm font-medium mb-1 block text-white">Bed Number</label>
-              <Input
-                placeholder="e.g., G-107"
-                value={newBed.bedNumber}
-                onChange={(e) => setNewBed({ ...newBed, bedNumber: e.target.value })}
-                className="border-2 border-white/20 focus:border-white bg-black text-white"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block text-white">Bed Number *</label>
+                <Input
+                  placeholder="e.g., C-204"
+                  value={newBed.bedNumber}
+                  onChange={(e) => setNewBed({ ...newBed, bedNumber: e.target.value })}
+                  className="border-2 border-white/20 focus:border-white bg-black text-white"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-white">Room Type *</label>
+                {showRoomTypeInput ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter new room type"
+                      value={newRoomTypeValue}
+                      onChange={(e) => setNewRoomTypeValue(e.target.value)}
+                      className="border-2 border-white/20 focus:border-white bg-black text-white"
+                      onKeyPress={(e) => e.key === 'Enter' && handleSaveRoomType()}
+                    />
+                    <Button onClick={handleSaveRoomType} className="bg-green-600 hover:bg-green-700 text-white px-3">✓</Button>
+                    <Button onClick={() => { setShowRoomTypeInput(false); setNewRoomTypeValue(""); }} className="bg-red-600 hover:bg-red-700 text-white px-3">✕</Button>
+                  </div>
+                ) : (
+                  <Select
+                    value={newBed.roomType}
+                    onChange={(e) => {
+                      if (e.target.value === "__ADD_NEW__") {
+                        setShowRoomTypeInput(true);
+                      } else {
+                        setNewBed({ ...newBed, roomType: e.target.value as RoomType });
+                      }
+                    }}
+                    className="border-2 border-white/20 focus:border-white bg-black text-white"
+                  >
+                    <option value="">Select Room Type</option>
+                    {customRoomTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                    <option value="__ADD_NEW__" className="font-bold text-green-400">+ Add New Room Type</option>
+                  </Select>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-white">Department</label>
+                {showDepartmentInput ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter new department"
+                      value={newDepartmentValue}
+                      onChange={(e) => setNewDepartmentValue(e.target.value)}
+                      className="border-2 border-white/20 focus:border-white bg-black text-white"
+                      onKeyPress={(e) => e.key === 'Enter' && handleSaveDepartment()}
+                    />
+                    <Button onClick={handleSaveDepartment} className="bg-green-600 hover:bg-green-700 text-white px-3">✓</Button>
+                    <Button onClick={() => { setShowDepartmentInput(false); setNewDepartmentValue(""); }} className="bg-red-600 hover:bg-red-700 text-white px-3">✕</Button>
+                  </div>
+                ) : (
+                  <Select
+                    value={newBed.department || "NA"}
+                    onChange={(e) => {
+                      if (e.target.value === "__ADD_NEW__") {
+                        setShowDepartmentInput(true);
+                      } else {
+                        setNewBed({ ...newBed, department: e.target.value === "NA" ? "" : e.target.value });
+                      }
+                    }}
+                    className="border-2 border-white/20 focus:border-white bg-black text-white"
+                  >
+                    <option value="NA">NA</option>
+                    {customDepartments.filter(d => d !== "NA").map((dept) => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
+                    <option value="__ADD_NEW__" className="font-bold text-green-400">+ Add New Department</option>
+                  </Select>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-white">Floor *</label>
+                {showFloorInput ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter new floor"
+                      value={newFloorValue}
+                      onChange={(e) => setNewFloorValue(e.target.value)}
+                      className="border-2 border-white/20 focus:border-white bg-black text-white"
+                      onKeyPress={(e) => e.key === 'Enter' && handleSaveFloor()}
+                    />
+                    <Button onClick={handleSaveFloor} className="bg-green-600 hover:bg-green-700 text-white px-3">✓</Button>
+                    <Button onClick={() => { setShowFloorInput(false); setNewFloorValue(""); }} className="bg-red-600 hover:bg-red-700 text-white px-3">✕</Button>
+                  </div>
+                ) : (
+                  <Select
+                    value={newBed.floor || ""}
+                    onChange={(e) => {
+                      if (e.target.value === "__ADD_NEW__") {
+                        setShowFloorInput(true);
+                      } else {
+                        setNewBed({ ...newBed, floor: e.target.value as Floor });
+                      }
+                    }}
+                    className="border-2 border-white/20 focus:border-white bg-black text-white"
+                  >
+                    <option value="">Select Floor</option>
+                    {customFloors.map((floor) => (
+                      <option key={floor} value={floor}>{floor}</option>
+                    ))}
+                    <option value="__ADD_NEW__" className="font-bold text-green-400">+ Add New Floor</option>
+                  </Select>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-white">Wing *</label>
+                {showWingInput ? (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter new wing"
+                      value={newWingValue}
+                      onChange={(e) => setNewWingValue(e.target.value)}
+                      className="border-2 border-white/20 focus:border-white bg-black text-white"
+                      onKeyPress={(e) => e.key === 'Enter' && handleSaveWing()}
+                    />
+                    <Button onClick={handleSaveWing} className="bg-green-600 hover:bg-green-700 text-white px-3">✓</Button>
+                    <Button onClick={() => { setShowWingInput(false); setNewWingValue(""); }} className="bg-red-600 hover:bg-red-700 text-white px-3">✕</Button>
+                  </div>
+                ) : (
+                  <Select
+                    value={newBed.wing || ""}
+                    onChange={(e) => {
+                      if (e.target.value === "__ADD_NEW__") {
+                        setShowWingInput(true);
+                      } else {
+                        setNewBed({ ...newBed, wing: e.target.value as Wing });
+                      }
+                    }}
+                    className="border-2 border-white/20 focus:border-white bg-black text-white"
+                  >
+                    <option value="">Select Wing</option>
+                    {customWings.map((wing) => (
+                      <option key={wing} value={wing}>{wing}</option>
+                    ))}
+                    <option value="__ADD_NEW__" className="font-bold text-green-400">+ Add New Wing</option>
+                  </Select>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block text-white">Daily Rate (₹) *</label>
+                <Input
+                  type="number"
+                  placeholder="e.g., 2000"
+                  value={newBed.dailyRate || ""}
+                  onChange={(e) => setNewBed({ ...newBed, dailyRate: e.target.value ? parseFloat(e.target.value) : 0 })}
+                  className="border-2 border-white/20 focus:border-white bg-black text-white"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block text-white">Ward</label>
-              <Select
-                value={newBed.ward}
-                onChange={(e) => setNewBed({ ...newBed, ward: e.target.value as Ward })}
-                className="border-2 border-white/20 focus:border-white bg-black text-white"
-              >
-                <option value="General">General</option>
-                <option value="ICU">ICU</option>
-                <option value="Pediatric">Pediatric</option>
-                <option value="Maternity">Maternity</option>
-                <option value="Emergency">Emergency</option>
-              </Select>
+            
+            {/* Equipment Section */}
+            <div className="border-2 border-white/20 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-white mb-3">Equipment Available</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newBed.equipment.hasMonitor}
+                    onChange={(e) => setNewBed({ 
+                      ...newBed, 
+                      equipment: { ...newBed.equipment, hasMonitor: e.target.checked }
+                    })}
+                    className="w-4 h-4 rounded border-white/20"
+                  />
+                  <span className="text-sm text-white">Monitor</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newBed.equipment.hasOxygen}
+                    onChange={(e) => setNewBed({ 
+                      ...newBed, 
+                      equipment: { ...newBed.equipment, hasOxygen: e.target.checked }
+                    })}
+                    className="w-4 h-4 rounded border-white/20"
+                  />
+                  <span className="text-sm text-white">Oxygen</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newBed.equipment.hasVentilator}
+                    onChange={(e) => setNewBed({ 
+                      ...newBed, 
+                      equipment: { ...newBed.equipment, hasVentilator: e.target.checked }
+                    })}
+                    className="w-4 h-4 rounded border-white/20"
+                  />
+                  <span className="text-sm text-white">Ventilator</span>
+                </label>
+              </div>
             </div>
-            <div className="flex justify-end gap-2 pt-4">
+            
+            <div className="flex justify-end gap-2 pt-4 border-t-2 border-white/20">
               <Button variant="outline" onClick={() => setShowAddDialog(false)} className="border-2 border-white hover:bg-white hover:text-black text-white">
                 Cancel
               </Button>
