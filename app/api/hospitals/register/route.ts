@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
+import { getDb, getNextId } from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
 
@@ -75,22 +75,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate next hospital ID (h1, h2, h3...)
-    const lastHospital = await db.collection("hospitals")
-      .find()
-      .sort({ _id: -1 })
-      .limit(1)
-      .toArray();
-    
-    let nextHospitalNumber = 1;
-    if (lastHospital.length > 0 && lastHospital[0]._id) {
-      const lastId = lastHospital[0]._id.toString();
-      const match = lastId.match(/^h(\d+)$/);
-      if (match) {
-        nextHospitalNumber = parseInt(match[1]) + 1;
-      }
-    }
-    const hospitalId = `h${nextHospitalNumber}`;
+    // Generate next hospital ID using atomic counter (h1, h2, h3...)
+    const hospitalId = await getNextId(db, "hospitals", "h");
 
     // Check if admin email already exists (unique constraint)
     const existingUser = await db.collection("users").findOne({
@@ -110,23 +96,8 @@ export async function POST(request: Request) {
     // Hash password
     const passwordHash = await bcrypt.hash(adminPassword, 10);
 
-    // Generate next user ID (serial number)
-    // Get all users and find the highest numeric ID
-    const allUsers = await db.collection("users")
-      .find({}, { projection: { _id: 1 } })
-      .toArray();
-    
-    let nextUserNumber = 1;
-    if (allUsers.length > 0) {
-      const numericIds = allUsers
-        .map(u => parseInt(u._id.toString()))
-        .filter(id => !isNaN(id));
-      
-      if (numericIds.length > 0) {
-        nextUserNumber = Math.max(...numericIds) + 1;
-      }
-    }
-    const userId = nextUserNumber.toString();
+    // Generate next user ID using atomic counter (numeric)
+    const userId = await getNextId(db, "users");
 
     // Create hospital with custom ID
     const hospital = {

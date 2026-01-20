@@ -93,6 +93,7 @@ export default function ClaimsPage() {
   const [selectedClaim, setSelectedClaim] = useState<Claim | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [selectedClaimForExpense, setSelectedClaimForExpense] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [expenseView, setExpenseView] = useState<"daily" | "history">("daily");
@@ -143,7 +144,7 @@ export default function ClaimsPage() {
 
   const handleAddClaim = async () => {
     try {
-      if (!newClaim.patientId || !newClaim.policyNumber || !newClaim.insurer || !newClaim.claimAmount) {
+      if (!newClaim.patientId?.trim() || !newClaim.policyNumber?.trim() || !newClaim.insurer?.trim()) {
         alert("Please fill in all required fields");
         return;
       }
@@ -160,9 +161,9 @@ export default function ClaimsPage() {
         mrNumber: selectedPatient.uhid,
         policyNumber: newClaim.policyNumber,
         insurer: newClaim.insurer,
-        claimAmount: parseFloat(newClaim.claimAmount),
+        claimAmount: 0,
         approvedAmount: 0,
-        pendingAmount: parseFloat(newClaim.claimAmount),
+        pendingAmount: 0,
         rejectedAmount: 0,
         status: "pending" as ClaimStatus,
         submissionDate: new Date().toISOString(),
@@ -393,10 +394,7 @@ export default function ClaimsPage() {
           <p className="text-gray-400 mt-2 text-lg">Manage insurance claims, approvals, and reimbursements</p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={() => setShowAddExpense(true)} className="bg-gray-800 hover:bg-gray-700 text-white shadow-lg font-semibold">
-            <Plus className="h-5 w-5 mr-2" />
-            Add Expense
-          </Button>
+
           <Button onClick={() => setShowAddDialog(true)} className="bg-white hover:bg-gray-200 text-black shadow-lg font-semibold">
             <Plus className="h-5 w-5 mr-2" />
             Create Claim
@@ -525,15 +523,30 @@ export default function ClaimsPage() {
                       {claim.submissionDate ? format(parseISO(claim.submissionDate), "MMM dd, yyyy") : "N/A"}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedClaim(claim)}
-                        className="hover:bg-white/10 hover:text-white text-gray-300"
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedClaim(claim)}
+                          className="hover:bg-white/10 hover:text-white text-gray-300"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedClaimForExpense(claim.id);
+                            setNewExpense({ ...newExpense, claimId: claim.id });
+                            setShowAddExpense(true);
+                          }}
+                          className="hover:bg-green-500/20 hover:text-green-400 text-gray-300"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Expense
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1068,33 +1081,31 @@ export default function ClaimsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showAddExpense} onOpenChange={setShowAddExpense}>
+      <Dialog open={showAddExpense} onOpenChange={(open) => {
+        setShowAddExpense(open);
+        if (!open) {
+          setSelectedClaimForExpense(null);
+          setNewExpense({
+            claimId: "",
+            date: new Date().toISOString().split('T')[0],
+            description: "",
+            amount: "",
+            category: "room" as ExpenseCategory,
+            notes: "",
+          });
+        }
+      }}>
         <DialogContent className="max-w-2xl bg-black border-2 border-white text-white">
           <DialogHeader>
             <DialogTitle className="text-white">Add Daily Expense</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Add a new expense to an existing claim
+              {selectedClaimForExpense 
+                ? `Adding expense for ${claims.find(c => c.id === selectedClaimForExpense)?.patientName} (${claims.find(c => c.id === selectedClaimForExpense)?.insurer})`
+                : "Add a new expense to an existing claim"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 p-6">
             <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="text-sm font-medium mb-1 block text-white">Select Claim *</label>
-                <select
-                  value={newExpense.claimId}
-                  onChange={(e) => setNewExpense({ ...newExpense, claimId: e.target.value })}
-                  className="w-full h-10 rounded-md border-2 border-white/20 focus:border-white bg-black text-white px-3 py-2"
-                >
-                  <option value="">Select a claim</option>
-                  {claims
-                    .filter(c => c.status !== "rejected")
-                    .map((claim) => (
-                      <option key={claim.id} value={claim.id}>
-                        {claim.id} - {claim.patientName} ({claim.insurer})
-                      </option>
-                    ))}
-                </select>
-              </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-white">Date *</label>
                 <Input

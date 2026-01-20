@@ -31,3 +31,19 @@ export async function getHospitalDb(hospitalCode: string): Promise<Db> {
   // Code is already sanitized during generation to be DB-safe and under 38 bytes
   return client.db(`dh_${hospitalCode}`);
 }
+
+// Generate next ID using atomic counter (efficient, no full collection scan)
+export async function getNextId(
+  db: Db,
+  collectionName: string,
+  prefix: string = ""
+): Promise<string> {
+  const counter = await db.collection("counters").findOneAndUpdate(
+    { _id: collectionName },
+    { $inc: { seq: 1 } },
+    { upsert: true, returnDocument: "after" }
+  );
+
+  const seq = counter?.seq || 1;
+  return prefix ? `${prefix}${seq}` : seq.toString();
+}

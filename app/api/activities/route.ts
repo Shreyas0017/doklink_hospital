@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getHospitalDb } from "@/lib/mongodb";
+import { getHospitalDb, getNextId } from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { ObjectId } from "mongodb";
@@ -46,25 +46,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const db = await getHospitalDb(session.user.hospitalCode);
 
-    // Generate next activity ID (a1, a2, a3...)
-    const allActivities = await db.collection("activities")
-      .find({}, { projection: { _id: 1 } })
-      .toArray();
-    
-    let nextActivityNumber = 1;
-    if (allActivities.length > 0) {
-      const numericIds = allActivities
-        .map(a => {
-          const match = a._id.toString().match(/^a(\d+)$/);
-          return match ? parseInt(match[1]) : null;
-        })
-        .filter(id => id !== null);
-      
-      if (numericIds.length > 0) {
-        nextActivityNumber = Math.max(...numericIds) + 1;
-      }
-    }
-    const activityId = `a${nextActivityNumber}`;
+    // Generate next activity ID using atomic counter (a1, a2, a3...)
+    const activityId = await getNextId(db, "activities", "a");
 
     const activityData = {
       _id: activityId,

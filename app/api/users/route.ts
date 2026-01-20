@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/mongodb";
+import { getDb, getNextId } from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 import { ObjectId } from "mongodb";
 
@@ -313,23 +313,8 @@ export async function POST(request: Request) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Generate next user ID (serial number)
-    // Get all users and find the highest numeric ID
-    const allUsers = await db.collection("users")
-      .find({}, { projection: { _id: 1 } })
-      .toArray();
-    
-    let nextUserNumber = 1;
-    if (allUsers.length > 0) {
-      const numericIds = allUsers
-        .map(u => parseInt(u._id.toString()))
-        .filter(id => !isNaN(id));
-      
-      if (numericIds.length > 0) {
-        nextUserNumber = Math.max(...numericIds) + 1;
-      }
-    }
-    const userId = nextUserNumber.toString();
+    // Generate next user ID using atomic counter (numeric)
+    const userId = await getNextId(db, "users");
 
     // Create user
     const newUser = {

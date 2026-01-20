@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getHospitalDb } from "@/lib/mongodb";
+import { getHospitalDb, getNextId } from "@/lib/mongodb";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import { ObjectId } from "mongodb";
@@ -41,25 +41,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const db = await getHospitalDb(session.user.hospitalCode);
 
-    // Generate next patient ID (p1, p2, p3...)
-    const allPatients = await db.collection("patients")
-      .find({}, { projection: { _id: 1 } })
-      .toArray();
-    
-    let nextPatientNumber = 1;
-    if (allPatients.length > 0) {
-      const numericIds = allPatients
-        .map(p => {
-          const match = p._id.toString().match(/^p(\d+)$/);
-          return match ? parseInt(match[1]) : null;
-        })
-        .filter(id => id !== null);
-      
-      if (numericIds.length > 0) {
-        nextPatientNumber = Math.max(...numericIds) + 1;
-      }
-    }
-    const patientId = `p${nextPatientNumber}`;
+    // Generate next patient ID using atomic counter (p1, p2, p3...)
+    const patientId = await getNextId(db, "patients", "p");
 
     const patientData = {
       _id: patientId,
