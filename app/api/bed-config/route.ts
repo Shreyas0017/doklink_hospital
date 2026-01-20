@@ -19,7 +19,7 @@ export async function GET() {
     if (!bedConfig) {
       // Create default config
       bedConfig = {
-        roomTypes: [],
+        bedCategories: [],
         departments: ["NA"],
         floors: [],
         wings: ["NA"],
@@ -30,7 +30,7 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      roomTypes: bedConfig.roomTypes || [],
+      bedCategories: bedConfig.bedCategories || [],
       departments: bedConfig.departments || ["NA"],
       floors: bedConfig.floors || [],
       wings: bedConfig.wings || ["NA"],
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     // Valid fields
-    const validFields = ["roomTypes", "departments", "floors", "wings"];
+    const validFields = ["bedCategories", "departments", "floors", "wings"];
     if (!validFields.includes(field)) {
       return NextResponse.json({ error: "Invalid field" }, { status: 400 });
     }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      roomTypes: bedConfig?.roomTypes || [],
+      bedCategories: bedConfig?.bedCategories || [],
       departments: bedConfig?.departments || ["NA"],
       floors: bedConfig?.floors || [],
       wings: bedConfig?.wings || ["NA"],

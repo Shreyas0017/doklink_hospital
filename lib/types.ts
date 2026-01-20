@@ -16,7 +16,7 @@ export type Gender = "Male" | "Female" | "Other";
 
 export type BedStatus = "available" | "occupied" | "maintenance" | "reserved";
 
-export type RoomType =
+export type BedCategory =
   | "General"
   | "Semi-Private"
   | "Deluxe Cabin"
@@ -63,7 +63,7 @@ export interface Bed extends BaseDocument {
   id?: string; // Add id for frontend use
   hospitalId: string; // Multi-tenant field (h1, h2, etc.)
   bedNumber: string;
-  roomType: RoomType;
+  bedCategory: BedCategory;
   department?: string; // Optional department field, defaults to "NA"
   floor: Floor;
   wing: Wing;
