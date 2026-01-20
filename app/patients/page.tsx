@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +31,9 @@ import {
   Eye,
   Filter,
   UserMinus,
+  Users,
+  Clock,
+  UserCheck,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -378,17 +380,69 @@ export default function PatientsPage() {
     return format(dateObj, formatStr);
   };
 
+  const waitingPatients = patients.filter(p => p.status === "Waiting").length;
+  const admittedPatients = patients.filter(p => p.status === "Admitted").length;
+  const dischargedPatients = patients.filter(p => p.status === "Discharged").length;
+
   return (
     <div className="min-h-screen bg-black p-8">
       <div className="flex items-center justify-between mb-8 animate-fadeIn">
         <div>
           <h1 className="text-4xl font-black text-white">Patient Management</h1>
-          <p className="text-gray-600 mt-2 text-lg">Manage patient records, admissions, and medical care</p>
+          <p className="text-gray-400 mt-2 text-lg">Manage patient records, admissions, and medical care</p>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="bg-white hover:bg-gray-200 text-black shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
           <Plus className="h-5 w-5 mr-2" />
           Add Patient
         </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card className="border-2 border-blue-500/30 bg-blue-500/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Total Patients</p>
+                <p className="text-3xl font-bold text-white mt-1">{patients.length}</p>
+              </div>
+              <Users className="h-10 w-10 text-blue-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-yellow-500/30 bg-yellow-500/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Waiting</p>
+                <p className="text-3xl font-bold text-white mt-1">{waitingPatients}</p>
+              </div>
+              <Clock className="h-10 w-10 text-yellow-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-green-500/30 bg-green-500/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Admitted</p>
+                <p className="text-3xl font-bold text-white mt-1">{admittedPatients}</p>
+              </div>
+              <UserCheck className="h-10 w-10 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-purple-500/30 bg-purple-500/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Discharged</p>
+                <p className="text-3xl font-bold text-white mt-1">{dischargedPatients}</p>
+              </div>
+              <UserMinus className="h-10 w-10 text-purple-400" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search and Filters */}
@@ -406,16 +460,16 @@ export default function PatientsPage() {
             </div>
             <div className="flex items-center gap-3">
               <Filter className="h-5 w-5 text-gray-600" />
-              <Select
+              <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as PatientStatus | "All")}
-                className="w-40 border-2 border-gray-700 focus:border-white bg-black text-white"
+                className="w-40 h-10 rounded-md border-2 border-gray-700 focus:border-white bg-black text-white px-3 py-2"
               >
                 <option value="All">All Status</option>
                 <option value="Waiting">Waiting</option>
                 <option value="Admitted">Admitted</option>
                 <option value="Discharged">Discharged</option>
-              </Select>
+              </select>
             </div>
           </div>
         </CardContent>
@@ -630,17 +684,17 @@ export default function PatientsPage() {
             <TabsContent value="documents" className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold">Patient Documents</h3>
-                <Select
+                <select
                   value={documentFilter}
                   onChange={(e) => setDocumentFilter(e.target.value as DocumentType | "All")}
-                  className="w-48"
+                  className="w-48 h-10 rounded-md border-2 border-gray-700 focus:border-white bg-black text-white px-3 py-2"
                 >
                   <option value="All">All Documents</option>
                   <option value="Report">Reports</option>
                   <option value="Prescription">Prescriptions</option>
                   <option value="Lab Result">Lab Results</option>
                   <option value="Discharge Summary">Discharge Summary</option>
-                </Select>
+                </select>
               </div>
 
               <div className="space-y-3">
@@ -766,15 +820,15 @@ export default function PatientsPage() {
         setPolicyNumber("");
         setPatientClaim(null);
       }}>
-        <DialogContent onClose={() => {
+        <DialogContent className="max-w-2xl bg-black border-2 border-white text-white" onClose={() => {
           setShowDischargeDialog(false);
           setClaimInsurance(null);
           setPolicyNumber("");
           setPatientClaim(null);
         }}>
           <DialogHeader>
-            <DialogTitle>Initiate Discharge Process</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Initiate Discharge Process</DialogTitle>
+            <DialogDescription className="text-gray-400">
               Discharge process for {selectedPatient?.name}
             </DialogDescription>
           </DialogHeader>
@@ -799,7 +853,7 @@ export default function PatientsPage() {
                   </Button>
                   <Button
                     onClick={() => setClaimInsurance(true)}
-                    className="flex-1"
+                    className="flex-1 bg-white hover:bg-gray-200 text-black font-semibold"
                   >
                     Yes, Claim Insurance
                   </Button>
@@ -821,11 +875,54 @@ export default function PatientsPage() {
                   >
                     Back
                   </Button>
-                  <Button onClick={() => {
+                  <Button onClick={async () => {
+                    if (selectedPatient) {
+                      // Update patient status in database
+                      await fetch('/api/patients', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          id: selectedPatient.id,
+                          status: 'Discharged',
+                        }),
+                      });
+
+                      // Update patient status in local state
+                      const updatedPatients = patients.map(p => 
+                        p.id === selectedPatient.id 
+                          ? { ...p, status: "Discharged" as const }
+                          : p
+                      );
+                      setPatients(updatedPatients);
+                      setSelectedPatient({ ...selectedPatient, status: "Discharged" });
+
+                      // Free up the bed if one was assigned
+                      if (selectedPatient.assignedBed) {
+                        const assignedBed = beds.find(b => b.bedNumber === selectedPatient.assignedBed);
+                        if (assignedBed) {
+                          await fetch(`/api/beds`, {
+                            method: "PUT",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              id: assignedBed.id,
+                              status: "available",
+                              patientId: null,
+                              bedNumber: assignedBed.bedNumber,
+                              ward: assignedBed.ward,
+                            }),
+                          });
+                          setBeds(beds.map(b => 
+                            b.id === assignedBed.id 
+                              ? { ...b, status: "available", patientId: undefined }
+                              : b
+                          ));
+                        }
+                      }
+                    }
                     setShowDischargeDialog(false);
                     setClaimInsurance(null);
                     alert("Patient discharged successfully!");
-                  }}>
+                  }} className="bg-white hover:bg-gray-200 text-black font-semibold">
                     Confirm Discharge
                   </Button>
                 </div>
@@ -877,12 +974,55 @@ export default function PatientsPage() {
                       >
                         Back
                       </Button>
-                      <Button onClick={() => {
+                      <Button onClick={async () => {
+                        if (selectedPatient) {
+                          // Update patient status in database
+                          await fetch('/api/patients', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              id: selectedPatient.id,
+                              status: 'Discharged',
+                            }),
+                          });
+
+                          // Update patient status in local state
+                          const updatedPatients = patients.map(p => 
+                            p.id === selectedPatient.id 
+                              ? { ...p, status: "Discharged" as const }
+                              : p
+                          );
+                          setPatients(updatedPatients);
+                          setSelectedPatient({ ...selectedPatient, status: "Discharged" });
+
+                          // Free up the bed if one was assigned
+                          if (selectedPatient.assignedBed) {
+                            const assignedBed = beds.find(b => b.bedNumber === selectedPatient.assignedBed);
+                            if (assignedBed) {
+                              await fetch(`/api/beds`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  id: assignedBed.id,
+                                  status: "available",
+                                  patientId: null,
+                                  bedNumber: assignedBed.bedNumber,
+                                  ward: assignedBed.ward,
+                                }),
+                              });
+                              setBeds(beds.map(b => 
+                                b.id === assignedBed.id 
+                                  ? { ...b, status: "available", patientId: undefined }
+                                  : b
+                              ));
+                            }
+                          }
+                        }
                         setShowDischargeDialog(false);
                         setClaimInsurance(null);
                         setPatientClaim(null);
                         alert("Patient discharged successfully with insurance claim!");
-                      }}>
+                      }} className="bg-white hover:bg-gray-200 text-black font-semibold">
                         Confirm Discharge
                       </Button>
                     </div>
@@ -910,16 +1050,59 @@ export default function PatientsPage() {
                       >
                         Back
                       </Button>
-                      <Button onClick={() => {
+                      <Button onClick={async () => {
                         if (!policyNumber) {
                           alert("Please enter a policy number");
                           return;
+                        }
+                        if (selectedPatient) {
+                          // Update patient status in database
+                          await fetch('/api/patients', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              id: selectedPatient.id,
+                              status: 'Discharged',
+                            }),
+                          });
+
+                          // Update patient status in local state
+                          const updatedPatients = patients.map(p => 
+                            p.id === selectedPatient.id 
+                              ? { ...p, status: "Discharged" as const }
+                              : p
+                          );
+                          setPatients(updatedPatients);
+                          setSelectedPatient({ ...selectedPatient, status: "Discharged" });
+
+                          // Free up the bed if one was assigned
+                          if (selectedPatient.assignedBed) {
+                            const assignedBed = beds.find(b => b.bedNumber === selectedPatient.assignedBed);
+                            if (assignedBed) {
+                              await fetch(`/api/beds`, {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  id: assignedBed.id,
+                                  status: "available",
+                                  patientId: null,
+                                  bedNumber: assignedBed.bedNumber,
+                                  ward: assignedBed.ward,
+                                }),
+                              });
+                              setBeds(beds.map(b => 
+                                b.id === assignedBed.id 
+                                  ? { ...b, status: "available", patientId: undefined }
+                                  : b
+                              ));
+                            }
+                          }
                         }
                         setShowDischargeDialog(false);
                         setClaimInsurance(null);
                         setPolicyNumber("");
                         alert("Patient discharged and insurance claim created!");
-                      }}>
+                      }} className="bg-white hover:bg-gray-200 text-black font-semibold">
                         Create Claim & Discharge
                       </Button>
                     </div>
@@ -994,15 +1177,15 @@ export default function PatientsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-white">Gender</label>
-                <Select
+                <select
                   value={newPatient.gender}
                   onChange={(e) => setNewPatient({ ...newPatient, gender: e.target.value })}
-                  className="bg-black text-white border-2 border-gray-700"
+                  className="w-full h-10 rounded-md bg-black text-white border-2 border-gray-700 px-3 py-2"
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
-                </Select>
+                </select>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-white">Phone *</label>
@@ -1025,10 +1208,10 @@ export default function PatientsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-white">Blood Group</label>
-                <Select
+                <select
                   value={newPatient.bloodGroup}
                   onChange={(e) => setNewPatient({ ...newPatient, bloodGroup: e.target.value })}
-                  className="bg-black text-white border-2 border-gray-700"
+                  className="w-full h-10 rounded-md bg-black text-white border-2 border-gray-700 px-3 py-2"
                 >
                   <option value="A+">A+</option>
                   <option value="A-">A-</option>
@@ -1038,7 +1221,7 @@ export default function PatientsPage() {
                   <option value="O-">O-</option>
                   <option value="AB+">AB+</option>
                   <option value="AB-">AB-</option>
-                </Select>
+                </select>
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium mb-1 block text-white">Address</label>
@@ -1087,9 +1270,10 @@ export default function PatientsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-white">Assign Bed</label>
-                <Select
+                <select
                   value={newPatient.assignedBed}
                   onChange={(e) => setNewPatient({ ...newPatient, assignedBed: e.target.value })}
+                  className="w-full h-10 rounded-md border-2 border-white/20 focus:border-white bg-black text-white px-3 py-2"
                 >
                   <option value="">Select a bed (optional)</option>
                   {availableBeds.map((bed) => (
@@ -1097,14 +1281,14 @@ export default function PatientsPage() {
                       {bed.bedNumber} ({bed.ward})
                     </option>
                   ))}
-                </Select>
+                </select>
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button variant="outline" onClick={() => setShowAddDialog(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddPatient}>
+              <Button onClick={handleAddPatient} className="bg-white hover:bg-gray-200 text-black font-semibold">
                 Add Patient
               </Button>
             </div>
@@ -1212,9 +1396,10 @@ export default function PatientsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-white">Assign Bed</label>
-                <Select
+                <select
                   value={newPatient.assignedBed}
                   onChange={(e) => setNewPatient({ ...newPatient, assignedBed: e.target.value })}
+                  className="w-full h-10 rounded-md bg-black text-white border-2 border-gray-700 px-3 py-2"
                 >
                   <option value="">Select a bed (optional)</option>
                   {availableBeds.map((bed) => (
@@ -1222,7 +1407,7 @@ export default function PatientsPage() {
                       {bed.bedNumber} ({bed.ward})
                     </option>
                   ))}
-                </Select>
+                </select>
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-4 border-t">
@@ -1247,7 +1432,7 @@ export default function PatientsPage() {
               }}>
                 Cancel
               </Button>
-              <Button onClick={handleReAdmitPatient}>
+              <Button onClick={handleReAdmitPatient} className="bg-white hover:bg-gray-200 text-black font-semibold">
                 Re-Admit Patient
               </Button>
             </div>

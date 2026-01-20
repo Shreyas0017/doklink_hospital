@@ -134,11 +134,61 @@ export default function Dashboard() {
 
       {/* STATS */}
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
-        <StatCard title="Total Beds" value={totalBeds} icon={<BedIcon className="h-6 w-6" />} />
-        <StatCard title="Occupied Beds" value={occupiedBeds} icon={<UserCheck className="h-6 w-6" />} />
-        <StatCard title="Available Beds" value={availableBeds} icon={<BedIcon className="h-6 w-6" />} />
-        <StatCard title="Patients" value={totalPatients} icon={<Users className="h-6 w-6" />} />
-        <StatCard title="Active Claims" value={activeClaims} icon={<FileText className="h-6 w-6" />} />
+        <Card className="border-2 border-blue-500/30 bg-blue-500/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Total Beds</p>
+                <p className="text-3xl font-bold text-white mt-1">{totalBeds}</p>
+              </div>
+              <BedIcon className="h-10 w-10 text-blue-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-red-500/30 bg-red-500/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Occupied Beds</p>
+                <p className="text-3xl font-bold text-white mt-1">{occupiedBeds}</p>
+              </div>
+              <UserCheck className="h-10 w-10 text-red-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-green-500/30 bg-green-500/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Available Beds</p>
+                <p className="text-3xl font-bold text-white mt-1">{availableBeds}</p>
+              </div>
+              <BedIcon className="h-10 w-10 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-purple-500/30 bg-purple-500/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Patients</p>
+                <p className="text-3xl font-bold text-white mt-1">{totalPatients}</p>
+              </div>
+              <Users className="h-10 w-10 text-purple-400" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-yellow-500/30 bg-yellow-500/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-400">Active Claims</p>
+                <p className="text-3xl font-bold text-white mt-1">{activeClaims}</p>
+              </div>
+              <FileText className="h-10 w-10 text-yellow-400" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* MAIN GRID */}

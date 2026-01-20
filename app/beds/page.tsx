@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { Bed, BedStatus, BedCategory, Floor, Wing } from "@/lib/types";
-import { Plus, Filter } from "lucide-react";
+import { Plus, Filter, Bed as BedIcon } from "lucide-react";
 
 export default function BedManagementPage() {
   const [beds, setBeds] = useState<Bed[]>([]);
@@ -436,21 +435,33 @@ export default function BedManagementPage() {
 
       {/* Stats Cards - Dynamically shows all bed categories */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Object.entries(bedCategoryStats).map(([bedCategory, bedCategoryBeds]) => {
+        {Object.entries(bedCategoryStats).map(([bedCategory, bedCategoryBeds], index) => {
           const occupied = bedCategoryBeds.filter((b) => b.status === "occupied").length;
           const total = bedCategoryBeds.length;
+          const colors = [
+            { border: "border-blue-500/30", bg: "bg-blue-500/10", icon: "text-blue-400" },
+            { border: "border-green-500/30", bg: "bg-green-500/10", icon: "text-green-400" },
+            { border: "border-purple-500/30", bg: "bg-purple-500/10", icon: "text-purple-400" },
+            { border: "border-orange-500/30", bg: "bg-orange-500/10", icon: "text-orange-400" },
+            { border: "border-pink-500/30", bg: "bg-pink-500/10", icon: "text-pink-400" },
+            { border: "border-yellow-500/30", bg: "bg-yellow-500/10", icon: "text-yellow-400" },
+          ];
+          const color = colors[index % colors.length];
           return (
-            <Card key={bedCategory} className="bg-black border-2 border-white shadow-lg hover:shadow-xl transition-shadow group">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-full text-center group-hover:bg-white group-hover:text-black transition-colors">{bedCategory}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-black text-white">
-                  {occupied}/{total}
+            <Card key={bedCategory} className={`border-2 ${color.border} ${color.bg} shadow-lg hover:shadow-xl transition-all`}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400 font-medium">{bedCategory}</p>
+                    <p className="text-3xl font-black text-white mt-1">
+                      {occupied}/{total}
+                    </p>
+                    <p className="text-sm font-medium text-gray-400 mt-2">
+                      {total > 0 ? ((occupied / total) * 100).toFixed(0) : 0}% occupied
+                    </p>
+                  </div>
+                  <BedIcon className={`h-10 w-10 ${color.icon}`} />
                 </div>
-                <p className="text-sm font-medium text-gray-400 mt-2">
-                  {total > 0 ? ((occupied / total) * 100).toFixed(0) : 0}% occupied
-                </p>
               </CardContent>
             </Card>
           );
@@ -465,30 +476,30 @@ export default function BedManagementPage() {
             <div className="flex-1 grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-1 block text-white">Bed Category</label>
-                <Select
+                <select
                   value={selectedBedCategory}
                   onChange={(e) => setSelectedBedCategory(e.target.value as BedCategory | "All")}
-                  className="border-2 border-white/20 focus:border-white bg-black text-white"
+                  className="w-full h-10 rounded-md border-2 border-white/20 focus:border-white bg-black text-white px-3 py-2"
                 >
                   <option value="All">All Bed Categories</option>
                   {customBedCategories.map((type) => (
                     <option key={type} value={type}>{type}</option>
                   ))}
-                </Select>
+                </select>
               </div>
               <div>
                 <label className="text-sm font-medium mb-1 block text-white">Status</label>
-                <Select
+                <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value as BedStatus | "All")}
-                  className="border-2 border-white/20 focus:border-white bg-black text-white"
+                  className="w-full h-10 rounded-md border-2 border-white/20 focus:border-white bg-black text-white px-3 py-2"
                 >
                   <option value="All">All Status</option>
                   <option value="available">Available</option>
                   <option value="occupied">Occupied</option>
                   <option value="maintenance">Maintenance</option>
                   <option value="reserved">Reserved</option>
-                </Select>
+                </select>
               </div>
             </div>
           </div>
@@ -715,7 +726,7 @@ export default function BedManagementPage() {
                     <Button onClick={() => { setShowBedCategoryInput(false); setNewBedCategoryValue(""); }} className="bg-red-600 hover:bg-red-700 text-white px-3">✕</Button>
                   </div>
                 ) : (
-                  <Select
+                  <select
                     value={newBed.bedCategory}
                     onChange={(e) => {
                       if (e.target.value === "__ADD_NEW__") {
@@ -724,14 +735,14 @@ export default function BedManagementPage() {
                         setNewBed({ ...newBed, bedCategory: e.target.value as BedCategory });
                       }
                     }}
-                    className="border-2 border-white/20 focus:border-white bg-black text-white"
+                    className="w-full h-10 rounded-md border-2 border-white/20 focus:border-white bg-black text-white px-3 py-2"
                   >
                     <option value="">Select Bed Category</option>
                     {customBedCategories.map((type) => (
                       <option key={type} value={type}>{type}</option>
                     ))}
                     <option value="__ADD_NEW__" className="font-bold text-green-400">+ Add New Bed Category</option>
-                  </Select>
+                  </select>
                 )}
               </div>
               <div>
@@ -749,7 +760,7 @@ export default function BedManagementPage() {
                     <Button onClick={() => { setShowDepartmentInput(false); setNewDepartmentValue(""); }} className="bg-red-600 hover:bg-red-700 text-white px-3">✕</Button>
                   </div>
                 ) : (
-                  <Select
+                  <select
                     value={newBed.department || "NA"}
                     onChange={(e) => {
                       if (e.target.value === "__ADD_NEW__") {
@@ -758,14 +769,14 @@ export default function BedManagementPage() {
                         setNewBed({ ...newBed, department: e.target.value === "NA" ? "" : e.target.value });
                       }
                     }}
-                    className="border-2 border-white/20 focus:border-white bg-black text-white"
+                    className="w-full h-10 rounded-md border-2 border-white/20 focus:border-white bg-black text-white px-3 py-2"
                   >
                     <option value="NA">NA</option>
                     {customDepartments.filter(d => d !== "NA").map((dept) => (
                       <option key={dept} value={dept}>{dept}</option>
                     ))}
                     <option value="__ADD_NEW__" className="font-bold text-green-400">+ Add New Department</option>
-                  </Select>
+                  </select>
                 )}
               </div>
               <div>
@@ -783,7 +794,7 @@ export default function BedManagementPage() {
                     <Button onClick={() => { setShowFloorInput(false); setNewFloorValue(""); }} className="bg-red-600 hover:bg-red-700 text-white px-3">✕</Button>
                   </div>
                 ) : (
-                  <Select
+                  <select
                     value={newBed.floor || ""}
                     onChange={(e) => {
                       if (e.target.value === "__ADD_NEW__") {
@@ -792,14 +803,14 @@ export default function BedManagementPage() {
                         setNewBed({ ...newBed, floor: e.target.value as Floor });
                       }
                     }}
-                    className="border-2 border-white/20 focus:border-white bg-black text-white"
+                    className="w-full h-10 rounded-md border-2 border-white/20 focus:border-white bg-black text-white px-3 py-2"
                   >
                     <option value="">Select Floor</option>
                     {customFloors.map((floor) => (
                       <option key={floor} value={floor}>{floor}</option>
                     ))}
                     <option value="__ADD_NEW__" className="font-bold text-green-400">+ Add New Floor</option>
-                  </Select>
+                  </select>
                 )}
               </div>
               <div>
@@ -817,7 +828,7 @@ export default function BedManagementPage() {
                     <Button onClick={() => { setShowWingInput(false); setNewWingValue(""); }} className="bg-red-600 hover:bg-red-700 text-white px-3">✕</Button>
                   </div>
                 ) : (
-                  <Select
+                  <select
                     value={newBed.wing || ""}
                     onChange={(e) => {
                       if (e.target.value === "__ADD_NEW__") {
@@ -826,14 +837,14 @@ export default function BedManagementPage() {
                         setNewBed({ ...newBed, wing: e.target.value as Wing });
                       }
                     }}
-                    className="border-2 border-white/20 focus:border-white bg-black text-white"
+                    className="w-full h-10 rounded-md border-2 border-white/20 focus:border-white bg-black text-white px-3 py-2"
                   >
                     <option value="">Select Wing</option>
                     {customWings.map((wing) => (
                       <option key={wing} value={wing}>{wing}</option>
                     ))}
                     <option value="__ADD_NEW__" className="font-bold text-green-400">+ Add New Wing</option>
-                  </Select>
+                  </select>
                 )}
               </div>
               <div>
@@ -913,10 +924,10 @@ export default function BedManagementPage() {
           <div className="space-y-4 p-6">
             <div>
               <label className="text-sm font-medium mb-1 block text-white">Select Patient</label>
-              <Select
+              <select
                 value={selectedPatientForBed}
                 onChange={(e) => setSelectedPatientForBed(e.target.value)}
-                className="border-2 border-white/20 focus:border-white bg-black text-white"
+                className="w-full h-10 rounded-md border-2 border-white/20 focus:border-white bg-black text-white px-3 py-2"
               >
                 <option value="">Choose a patient...</option>
                 {patients
@@ -926,7 +937,7 @@ export default function BedManagementPage() {
                       {patient.name} - {patient.id} ({patient.diagnosis})
                     </option>
                   ))}
-              </Select>
+              </select>
               {patients.filter((p) => (p.status === "Waiting" || p.status === "Admitted") && !p.assignedBed).length === 0 && (
                 <p className="text-sm text-gray-400 mt-2">No patients available for assignment</p>
               )}
