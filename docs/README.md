@@ -174,13 +174,157 @@ The application includes comprehensive mock data for demonstration:
 - 4 insurance claims with detailed expenses and approval history
 - Recent activity feed
 
+## API Endpoints
+
+The application provides a comprehensive REST API for managing hospital operations. All endpoints require authentication via NextAuth.
+
+### Authentication
+- **POST** `/api/auth/signin` - User login with credentials
+- **POST** `/api/auth/signout` - User logout
+- **GET** `/api/auth/session` - Get current session information
+
+### Beds Management
+- **GET** `/api/beds` - Fetch all beds for the hospital
+  - Returns: Array of bed objects with patient assignments
+  - Auth: Required (hospital-scoped)
+  
+- **POST** `/api/beds` - Create a new bed
+  - Body: `{ bedNumber, ward, status, ... }`
+  - Returns: Created bed with auto-generated ID (b1, b2, b3...)
+  - Auth: Required
+  
+- **PUT** `/api/beds` - Update bed information
+  - Body: `{ id, status, patientId, ... }`
+  - Returns: Updated bed object
+  - Auth: Required
+
+### Bed Configuration
+- **GET** `/api/bed-config` - Get custom dropdown options (categories, departments, floors, wings)
+  - Returns: `{ bedCategories, departments, floors, wings }`
+  - Auth: Required
+  
+- **POST** `/api/bed-config` - Update custom dropdown options
+  - Body: `{ bedCategories, departments, floors, wings }`
+  - Auth: Required (HospitalAdmin)
+
+### Patients Management
+- **GET** `/api/patients` - Fetch all patients for the hospital
+  - Returns: Array of patient objects with assigned beds
+  - Auth: Required (hospital-scoped)
+  
+- **POST** `/api/patients` - Admit a new patient
+  - Body: `{ name, age, gender, diagnosis, assignedBed, ... }`
+  - Returns: Created patient with auto-generated ID (p1, p2, p3...)
+  - Auth: Required
+  
+- **PUT** `/api/patients` - Update patient information
+  - Body: `{ id, diagnosis, status, assignedBed, ... }`
+  - Returns: Updated patient object
+  - Auth: Required
+
+### Documents Management
+- **GET** `/api/documents` - Fetch all documents for the hospital
+  - Returns: Array of document objects linked to patients
+  - Auth: Required (hospital-scoped)
+  
+- **POST** `/api/documents` - Upload a new document
+  - Body: `{ patientId, type, name, url, ... }`
+  - Returns: Created document with auto-generated ID (d1, d2, d3...)
+  - Auth: Required
+
+### Insurance Claims
+- **GET** `/api/claims` - Fetch all insurance claims
+  - Returns: Array of claim objects with patient references
+  - Auth: Required (hospital-scoped)
+  
+- **POST** `/api/claims` - Create a new insurance claim
+  - Body: `{ patientId, policyNumber, insurer, diagnosis, ... }`
+  - Returns: Created claim with auto-generated ID (c1, c2, c3...)
+  - Auth: Required
+  
+- **PUT** `/api/claims` - Update claim information
+  - Body: `{ id, status, approvedAmount, ... }`
+  - Returns: Updated claim object
+  - Auth: Required
+
+### Activities Feed
+- **GET** `/api/activities` - Fetch recent hospital activities
+  - Returns: Array of 50 most recent activities (sorted by time)
+  - Auth: Required (hospital-scoped)
+  
+- **POST** `/api/activities` - Create a new activity log
+  - Body: `{ type, description, referenceId, ... }`
+  - Returns: Created activity with auto-generated ID (a1, a2, a3...)
+  - Auth: Required
+
+### Users Management
+- **GET** `/api/users` - Fetch users
+  - SuperAdmin: Returns all users across all hospitals
+  - HospitalAdmin: Returns users in their hospital only
+  - Auth: Required (Admin role)
+  
+- **PATCH** `/api/users` - Update user role or status
+  - Body: `{ userId, newRole, isActive }`
+  - Valid roles: HospitalAdmin, BasicUser
+  - Auth: Required (SuperAdmin only)
+
+### Hospitals Management
+- **GET** `/api/hospitals` - Fetch hospitals with statistics
+  - SuperAdmin: Returns all hospitals with bed/patient/claim counts
+  - HospitalAdmin: Returns hospital list without detailed stats
+  - Auth: Required (Admin role)
+  
+- **POST** `/api/hospitals/register` - Register a new hospital
+  - Body: `{ hospitalName, hospitalAddress, hospitalPhone, hospitalEmail, adminName, adminEmail, adminPassword, adminRole }`
+  - Creates hospital with auto-generated code and ID (h1, h2, h3...)
+  - Creates first admin user for the hospital
+  - Auth: Required (SuperAdmin only)
+
+### Authentication & Authorization
+
+All API endpoints use NextAuth session-based authentication with the following security features:
+
+- **Session Validation**: All endpoints verify active user session
+- **Hospital Scoping**: Data is automatically scoped to user's hospital (multi-tenant architecture)
+- **Role-Based Access Control**:
+  - `SuperAdmin`: Full system access, can manage all hospitals and users
+  - `HospitalAdmin`: Manage their hospital's data and users
+  - `BasicUser`: Read/write access to hospital data (no user management)
+
+### Response Format
+
+All endpoints return JSON responses with consistent structure:
+
+**Success Response:**
+```json
+{
+  "data": { ... },
+  "id": "auto-generated-id"
+}
+```
+
+**Error Response:**
+```json
+{
+  "error": "Error message description"
+}
+```
+
+### Auto-Generated IDs
+
+The system uses atomic counters to generate sequential IDs with prefixes:
+- Beds: `b1`, `b2`, `b3`...
+- Patients: `p1`, `p2`, `p3`...
+- Claims: `c1`, `c2`, `c3`...
+- Documents: `d1`, `d2`, `d3`...
+- Activities: `a1`, `a2`, `a3`...
+- Hospitals: `h1`, `h2`, `h3`...
+- Users: Numeric sequence
+
 ## Future Enhancements
 
 Potential features for expansion:
-- [ ] Real database integration (PostgreSQL/MongoDB)
-- [ ] Authentication and authorization
-- [ ] Role-based access control (Admin, Doctor, Nurse, Receptionist)
-- [ ] Real-time notifications
+- [ ] Real-time notifications via WebSocket
 - [ ] Appointment scheduling
 - [ ] Billing and invoicing
 - [ ] Staff management
@@ -190,6 +334,8 @@ Potential features for expansion:
 - [ ] PDF export functionality
 - [ ] Email notifications
 - [ ] Audit logs
+- [ ] File upload for documents
+- [ ] Advanced search and filtering
 
 ## Development Notes
 
